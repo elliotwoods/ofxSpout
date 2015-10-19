@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{46ca37a8-96d2-4d32-a8ec-de5571a7c3e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\ofxSpout">
+      <UniqueIdentifier>{09ec742c-cb2e-4fd3-b6bc-080b9871e9a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{cdb49e40-687e-4ead-8531-67def09d91a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\spout">
+      <UniqueIdentifier>{a0cde283-a076-402b-b334-609843e069ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\spout\include">
+      <UniqueIdentifier>{db94f335-56fe-4c9a-b26f-f888d5d21357}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\ofxSpout.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ofxSpout\Sender.h">
+      <Filter>src\ofxSpout</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\spout\include\SpoutDLL.h">
+      <Filter>libs\spout\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\ofxSpout\Sender.cpp">
+      <Filter>src\ofxSpout</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
