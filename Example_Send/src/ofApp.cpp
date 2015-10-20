@@ -2,6 +2,8 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+	ofSetFrameRate(60);
+
 	camera.initGrabber(640, 480);
 	sender.init("Camera");
 }

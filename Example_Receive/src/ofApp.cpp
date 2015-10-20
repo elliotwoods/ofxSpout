@@ -17,11 +17,14 @@ void ofApp::update(){
 void ofApp::draw(){
 	texture.draw(0, 0);
 	ofDrawBitmapString(receiver.getChannelName(), 20, 20);
+	ofDrawBitmapString("Press [SPACE] to select another source", 20, 30);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+	if (key == ' ') {
+		this->receiver.selectSenderPanel();
+	}
 }
 
 //--------------------------------------------------------------

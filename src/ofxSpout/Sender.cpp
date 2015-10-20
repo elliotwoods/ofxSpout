@@ -30,13 +30,13 @@ namespace ofxSpout {
 			char mutableName[256];
 			strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
 			if (!this->spoutSender->CreateSender(mutableName, this->width, this->height)) {
-				throw;
+				throw("Can't create sender");
 			}
 			this->channelName = string(mutableName);
 			return true;
 		}
-		catch (...) {
-			ofLogError("ofxSpout::Sender::init") << "Failed";
+		catch (const char * e) {
+			ofLogError("ofxSpout::Sender::init") << e;
 			this->release();
 			return false;
 		}
@@ -68,8 +68,7 @@ namespace ofxSpout {
 	bool Sender::send(const ofTexture & texture) {
 		try {
 			if (!this->isInitialized()) {
-				ofLogError("ofxSpout::Sender::send") << "Not initialised";
-				throw;
+				throw("Not initialised");
 			}
 
 			//check if the sender matches the settings of the texture
@@ -81,7 +80,7 @@ namespace ofxSpout {
 				char mutableName[256];
 				strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
 				if (!this->spoutSender->UpdateSender(mutableName, this->width, this->height)) {
-					throw;
+					throw("Can't update sender");
 				}
 				this->channelName = string(mutableName);
 			}
@@ -92,8 +91,8 @@ namespace ofxSpout {
 			this->spoutSender->SendTexture(texture.getTextureData().textureID, texture.getTextureData().textureTarget, this->width, this->height, false, drawFboId);
 			return true;
 		}
-		catch (...) {
-			ofLogError("ofxSpout::Sender::send") << "Failed";
+		catch (const char * e) {
+			ofLogError("ofxSpout::Sender::send") << e;
 			return false;
 		}
 	}
@@ -107,16 +106,15 @@ namespace ofxSpout {
 	bool Sender::setVerticalSync(bool verticalSync) {
 		try {
 			if (!this->isInitialized()) {
-				ofLogError("ofxSpout::Sender::setVerticalSync") << "Not initialised";
-				throw;
+				throw("Not initialized");
 			}
 			if (!this->spoutSender->SetVerticalSync(verticalSync)) {
-				throw;
+				throw("Can't set vertical sync");
 			}
 			return true;
 		}
-		catch (...) {
-			ofLogError("ofxSpout::Sender::setVerticalSync") << "Failed";
+		catch (const char * e) {
+			ofLogError("ofxSpout::Sender::setVerticalSync") << e;
 			return false;
 		}
 	}
@@ -125,15 +123,13 @@ namespace ofxSpout {
 	bool Sender::getVerticalSync() {
 		try {
 			if (!this->isInitialized()) {
-				ofLogError("ofxSpout::Sender::getVerticalSync") << "Not initialised";
-				throw;
+				throw("Not initialised");
 			}
 			return this->spoutSender->GetVerticalSync();
 		}
-		catch (...) {
-			ofLogError("ofxSpout::Sender::getVerticalSync") << "Failed";
+		catch (const char * e) {
+			ofLogError("ofxSpout::Sender::getVerticalSync") << e;
 			return false;
 		}
 	}
-
 };

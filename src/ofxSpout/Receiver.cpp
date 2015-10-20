@@ -27,15 +27,15 @@ namespace ofxSpout {
 			strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
 			unsigned int mutableWidth, mutableHeight;
 			if (!this->spoutReceiver->CreateReceiver(mutableName, mutableWidth, mutableHeight, channelName.empty())) {
-				throw;
+				throw("Can't create receiver");
 			}
 			this->channelName = string(mutableName);
 			this->width = mutableWidth;
 			this->height = mutableHeight;
 			return true;
 		}
-		catch (...) {
-			ofLogError("ofxSpout::Sender::init") << "Failed to initialise sender '" << channelName << "'";
+		catch (const char * e) {
+			ofLogError("ofxSpout::Sender::init") << "Channel : " << channelName << " : " << e;
 			this->release();
 			return false;
 		}
@@ -67,8 +67,7 @@ namespace ofxSpout {
 		try {
 			//check if we're initialised
 			if (!this->isInitialized()) {
-				ofLogError("ofxSpout::Receiver::recieve") << "Not initialised";
-				throw;
+				throw("Not initialized");
 			}
 
 			//prepare the channel name, allow it to be changed if different channels are available
@@ -86,7 +85,7 @@ namespace ofxSpout {
 			GLint drawFboId = 0;
 			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
 			if (!this->spoutReceiver->ReceiveTexture(mutableName, mutableWidth, mutableHeight, texture.getTextureData().textureID, texture.getTextureData().textureTarget, false, drawFboId)) {
-				throw;
+				throw("Can't receive texture");
 			}
 
 			//update our local settings incase anything changed
@@ -96,8 +95,8 @@ namespace ofxSpout {
 
 			return true;
 		}
-		catch (...) {
-			ofLogError("ofxSpout::Receiver::receive") << "Failed";
+		catch (const char * e) {
+			ofLogError("ofxSpout::Receiver::receive") << e;
 			return false;
 		}
 	}
@@ -106,14 +105,13 @@ namespace ofxSpout {
 	bool Receiver::selectSenderPanel() {
 		try {
 			if (!this->isInitialized()) {
-				ofLogError("ofxSpout::Receiver::selectSenderPanel") << "Not initialised";
-				throw;
+				throw("Not initialized");
 			}
 			this->spoutReceiver->SelectSenderPanel("Select sender");
 			return true;
 		}
-		catch (...) {
-			ofLogError("ofxSpout::Receiver::selectSenderPanel") << "Failed";
+		catch (const char * e) {
+			ofLogError("ofxSpout::Receiver::selectSenderPanel") << e;
 			return false;
 		}
 	}

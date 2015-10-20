@@ -537,33 +537,11 @@ void spoutDirectX::CloseDX11()
 //
 bool spoutDirectX::DX11available()
 {
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
 	return true;
-	/*
-	DWORD dwVersion = 0; 
-    DWORD dwMajorVersion = 0;
-    DWORD dwMinorVersion = 0; 
-    DWORD dwBuild = 0;
-
-    dwVersion = GetVersion();
- 
-    // Get the Windows version.
-    dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
-    dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
-
-    // Get the build number.
-    if (dwVersion < 0x80000000) dwBuild = (DWORD)(HIWORD(dwVersion));
-    // printf("Version is %d.%d Build (%d)\n", dwMajorVersion, dwMinorVersion, dwBuild);
-
-	// DirectX 11 only available for Windows 7 (6.1) and higher
-	if(dwMajorVersion >= 6 && dwMinorVersion >= 1) {
-		// printf("DirectX 11 available\n");
-		return true;
-	}
-	else {
-		// printf("No DirectX 11\n");
-		return false;
-	}
-	*/
+#else
+	return false;
+#endif
 }
 
 // Set required graphics adapter for output
