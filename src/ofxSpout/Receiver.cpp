@@ -36,7 +36,6 @@ namespace ofxSpout {
 		}
 		catch (const char * e) {
 			ofLogError("ofxSpout::Sender::init") << "Channel : " << channelName << " : " << e;
-			this->release();
 			return false;
 		}
 	}
@@ -107,7 +106,7 @@ namespace ofxSpout {
 			if (!this->isInitialized()) {
 				throw("Not initialized");
 			}
-			this->spoutReceiver->SelectSenderPanel("Select sender");
+			this->spoutReceiver->SelectSenderPanel();
 			return true;
 		}
 		catch (const char * e) {

@@ -2,6 +2,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+	ofSetWindowTitle("Sender");
 	ofSetFrameRate(60);
 
 	camera.initGrabber(640, 480);
