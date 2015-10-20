@@ -3,6 +3,9 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 	receiver.init();
+
+	//optionally you can specify a channel name e.g.
+	//receiver.init("Camera");
 }
 	
 //--------------------------------------------------------------

@@ -17,6 +17,8 @@ namespace ofxSpout {
 			return GL_RGBA8;
 		case DXGI_FORMAT_B8G8R8A8_UNORM:
 			return GL_BGRA;
+		default:
+			return 0;
 		}
 	}
 }
