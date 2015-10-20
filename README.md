@@ -1,4 +1,6 @@
 # ofxSpout
+![Thumbnail](https://raw.githubusercontent.com/elliotwoods/ofxSpout/master/ofxaddonx_thumbnail.png)
+
 Implementation of Spout v2 for sharing textures between applications (including DX and GL)
 
 Tested with:
