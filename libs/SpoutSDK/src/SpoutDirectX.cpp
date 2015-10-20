@@ -537,7 +537,7 @@ void spoutDirectX::CloseDX11()
 //
 bool spoutDirectX::DX11available()
 {
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
+#if (_WIN32_WINNT >= _WIN32_WINNT_WIN7)
 	return true;
 #else
 	return false;
