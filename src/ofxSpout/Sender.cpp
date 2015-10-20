@@ -99,6 +99,11 @@ namespace ofxSpout {
 	}
 
 	//-----------
+	string Sender::getChannelName() const {
+		return this->channelName;
+	}
+
+	//-----------
 	bool Sender::setVerticalSync(bool verticalSync) {
 		try {
 			if (!this->isInitialized()) {

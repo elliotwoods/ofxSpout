@@ -117,6 +117,11 @@ namespace ofxSpout {
 			return false;
 		}
 	}
+	
+	//-----------
+	string Receiver::getChannelName() const {
+		return this->channelName;
+	}
 
 	//----------
 	float Receiver::getWidth() const {

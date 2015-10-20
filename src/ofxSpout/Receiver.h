@@ -17,6 +17,8 @@ namespace ofxSpout {
 		bool receive(ofTexture &); // will automatically allocate the texture
 
 		bool selectSenderPanel();
+
+		string getChannelName() const;
 		float getWidth() const;
 		float getHeight() const;
 	protected:

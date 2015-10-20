@@ -16,6 +16,7 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 	texture.draw(0, 0);
+	ofDrawBitmapString(receiver.getChannelName(), 20, 20);
 }
 
 //--------------------------------------------------------------
