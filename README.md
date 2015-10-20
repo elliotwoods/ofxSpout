@@ -1,13 +1,14 @@
 # ofxSpout
 ![Thumbnail](https://raw.githubusercontent.com/elliotwoods/ofxSpout/master/ofxaddonx_thumbnail.png)
 
-Implementation of [Spout v2](http://spout.zeal.co/) for sharing textures between applications (including DX and GL)
+Implementation of [Spout v2](http://spout.zeal.co/) for sharing textures between applications (including DX and GL).
 
 Tested with:
 * openFrameworks 0.9.0 at 3d2c9f2d25c4401274b70e5f68251fd459d8a894
 * Visual Studio 2015
 * 32bit and 64bit
 * Windows 8.1
+* Spout v2.004
 
 # Usage
 
