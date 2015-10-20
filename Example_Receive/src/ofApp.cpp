@@ -2,19 +2,17 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	camera.initGrabber(640, 480);
-	sender.init("Camera");
+	receiver.init();
 }
 	
 //--------------------------------------------------------------
 void ofApp::update(){
-	camera.update();
-	sender.send(camera.getTexture());
+	receiver.receive(texture);
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	camera.draw(0, 0);
+	texture.draw(0, 0);
 }
 
 //--------------------------------------------------------------

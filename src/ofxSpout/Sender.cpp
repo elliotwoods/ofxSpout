@@ -1,11 +1,13 @@
 #include "Sender.h"
 
-#include "SpoutDLL.h"
+#include "ofFbo.h"
 
 namespace ofxSpout {
 	//----------
 	Sender::Sender() {
-		this->initialized = false;
+		this->spoutSender = nullptr;
+		this->width = 0;
+		this->height = 0;
 	}
 
 	//----------
@@ -14,40 +16,119 @@ namespace ofxSpout {
 	}
 
 	//----------
-	void Sender::init(string channelName) {
-		this->init(channelName, 512, 512);
-	}
-
-	//----------
-	void Sender::init(string channelName, int width, int height) {
+	bool Sender::init(string channelName, int initialWidth, int initialHeight) {
+		//unitialise any existing sender
 		this->release();
 
-		char * mutableName = new char[channelName.size() + 1];
-		strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
-		auto success = Spout2::CreateSender(mutableName, width, height);
+		try {
+			this->spoutSender = new SpoutSender();
 
-		if (success) {
-			this->initialized = true;
+			this->width = initialWidth;
+			this->height = initialHeight;
+
+			//create the sender, and allow for Spout to change our channel name
+			char mutableName[256];
+			strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
+			if (!this->spoutSender->CreateSender(mutableName, this->width, this->height)) {
+				throw;
+			}
 			this->channelName = string(mutableName);
+			return true;
 		}
-		else {
-			this->initialized = false;
+		catch (...) {
+			ofLogError("ofxSpout::Sender::init") << "Failed";
+			this->release();
+			return false;
 		}
-
-		delete[] mutableName;
 	}
 
 	//----------
 	void Sender::release() {
-		if (this->initialized) {
-			Spout2::ReleaseSender();
-			this->initialized = false;
+		if (this->isInitialized()) {
+			//free the sender, and reset our local settings
+			this->spoutSender->ReleaseSender();
+			delete this->spoutSender;
+			this->spoutSender = nullptr;
+			this->width = 0;
+			this->height = 0;
 		}
 	}
 
 	//----------
-	void Sender::send(const ofTexture & texture) {
-		Spout2::SendTexture(texture.getTextureData().textureID, GL_TEXTURE_2D, texture.getWidth(), texture.getHeight());
-		Spout2::UpdateSender(this->channelName)
+	bool Sender::isInitialized() const {
+		if (this->spoutSender) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
+
+	//----------
+	bool Sender::send(const ofTexture & texture) {
+		try {
+			if (!this->isInitialized()) {
+				ofLogError("ofxSpout::Sender::send") << "Not initialised";
+				throw;
+			}
+
+			//check if the sender matches the settings of the texture
+			if (this->width != texture.getWidth() || this->height != texture.getHeight()) {
+				this->width = texture.getWidth();
+				this->height = texture.getHeight();
+
+				//update the sender to match local settings
+				char mutableName[256];
+				strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
+				if (!this->spoutSender->UpdateSender(mutableName, this->width, this->height)) {
+					throw;
+				}
+				this->channelName = string(mutableName);
+			}
+
+			//send texture and retain any fbo bound for drawing
+			GLint drawFboId = 0;
+			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+			this->spoutSender->SendTexture(texture.getTextureData().textureID, texture.getTextureData().textureTarget, this->width, this->height, false, drawFboId);
+			return true;
+		}
+		catch (...) {
+			ofLogError("ofxSpout::Sender::send") << "Failed";
+			return false;
+		}
+	}
+
+	//-----------
+	bool Sender::setVerticalSync(bool verticalSync) {
+		try {
+			if (!this->isInitialized()) {
+				ofLogError("ofxSpout::Sender::setVerticalSync") << "Not initialised";
+				throw;
+			}
+			if (!this->spoutSender->SetVerticalSync(verticalSync)) {
+				throw;
+			}
+			return true;
+		}
+		catch (...) {
+			ofLogError("ofxSpout::Sender::setVerticalSync") << "Failed";
+			return false;
+		}
+	}
+
+	//-----------
+	bool Sender::getVerticalSync() {
+		try {
+			if (!this->isInitialized()) {
+				ofLogError("ofxSpout::Sender::getVerticalSync") << "Not initialised";
+				throw;
+			}
+			return this->spoutSender->GetVerticalSync();
+		}
+		catch (...) {
+			ofLogError("ofxSpout::Sender::getVerticalSync") << "Failed";
+			return false;
+		}
+	}
+
 };

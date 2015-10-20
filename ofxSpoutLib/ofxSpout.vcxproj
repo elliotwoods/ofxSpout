@@ -19,12 +19,35 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\libs\spout\include\SpoutDLL.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\Spout.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutCommon.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutDirectX.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutGLDXinterop.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutGLextensions.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutMemoryShare.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutReceiver.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutSDK.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutSender.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutSenderNames.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutSharedMemory.h" />
     <ClInclude Include="..\src\ofxSpout.h" />
+    <ClInclude Include="..\src\ofxSpout\Receiver.h" />
     <ClInclude Include="..\src\ofxSpout\Sender.h" />
+    <ClInclude Include="..\src\ofxSpout\Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutDirectX.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutGLDXinterop.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutGLextensions.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutMemoryShare.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutReceiver.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutSDK.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutSender.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutSenderNames.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutSharedMemory.cpp" />
+    <ClCompile Include="..\src\ofxSpout\Receiver.cpp" />
     <ClCompile Include="..\src\ofxSpout\Sender.cpp" />
+    <ClCompile Include="..\src\ofxSpout\Utils.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C087079E-2A0E-4B85-A479-C28E2D01A048}</ProjectGuid>
@@ -108,11 +131,9 @@
 if errorlevel 1 exit 0 else exit %errorlevel%</Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>Spout2.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>..\..\..\addons\ofxSpout\libs\spout\lib\vs\$(Platform)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -131,11 +152,9 @@ if errorlevel 1 exit 0 else exit %errorlevel%</Command>
 if errorlevel 1 exit 0 else exit %errorlevel%</Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>Spout2.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>..\..\..\addons\ofxSpout\libs\spout\lib\vs\$(Platform)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -157,11 +176,9 @@ if errorlevel 1 exit 0 else exit %errorlevel%</Command>
 if errorlevel 1 exit 0 else exit %errorlevel%</Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>Spout2.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>..\..\..\addons\ofxSpout\libs\spout\lib\vs\$(Platform)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -183,11 +200,9 @@ if errorlevel 1 exit 0 else exit %errorlevel%</Command>
 if errorlevel 1 exit 0 else exit %errorlevel%</Command>
     </PostBuildEvent>
     <Lib>
-      <AdditionalDependencies>Spout2.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
-    <Lib>
-      <AdditionalLibraryDirectories>..\..\..\addons\ofxSpout\libs\spout\lib\vs\$(Platform)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -2,19 +2,26 @@
 
 #include "ofTexture.h"
 #include <string>
+#include "SpoutSender.h"
 
 namespace ofxSpout {
 	class Sender {
 	public:
 		Sender();
 		~Sender();
-		void init(string channelName);
-		void init(string channelName, int width, int height);
-		void release();
 
-		void send(const ofTexture &);
+		bool init(string channelName, int initialWidth = 64, int initialHeight = 64);
+		void release();
+		bool isInitialized() const;
+
+		bool send(const ofTexture &);
+
+		bool setVerticalSync(bool);
+		bool getVerticalSync();
 	protected:
-		bool initialized;
 		string channelName;
+
+		SpoutSender * spoutSender;
+		int width, height;
 	};
 }
