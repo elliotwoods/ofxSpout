@@ -1,6 +1,12 @@
 # ofxSpout
 Implementation of Spout v2 for sharing textures between applications (including DX and GL)
 
+Tested with:
+* openFrameworks 0.9.0 at [https://github.com/openframeworks/openFrameworks/commit/3d2c9f2d25c4401274b70e5f68251fd459d8a894]
+* Visual Studio 2015
+* 32bit and 64bit
+* Windows 8.1
+
 # Usage
 
 ### Sending
