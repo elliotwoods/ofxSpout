@@ -9,7 +9,9 @@ Implementation of Spout v2 for sharing textures between applications (including 
 class ofApp {
 	ofxSpout::Sender sender;
 }
+```
 
+```c++
 void ofApp::setup() {
 	sender.init("My Sender");
 	//...
@@ -26,8 +28,10 @@ void ofApp::update() {
 class ofApp {
 	ofxSpout::Receiver sender;
 }
+```
 
 
+```c++
 void ofApp::setup() {
 	receiver.init();
 	//...
