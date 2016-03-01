@@ -14,7 +14,7 @@ namespace ofxSpout {
 		void release();
 		bool isInitialized() const;
 
-		bool send(const ofTexture &);
+		bool send(const ofTexture &, bool invert = false);
 
 		string getChannelName() const;
 		bool setVerticalSync(bool);
