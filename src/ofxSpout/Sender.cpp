@@ -65,7 +65,17 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Sender::send(const ofTexture & texture) {
+	bool Sender::isMemoryShareMode() {
+		if (this->spoutSender) {
+			return spoutSender->GetMemoryShareMode();
+		}
+		else {
+			return false;
+		}
+	}
+
+	//----------
+	bool Sender::send(const ofTexture & texture, bool invert) {
 		try {
 			if (!this->isInitialized()) {
 				throw("Not initialised");
@@ -88,7 +98,7 @@ namespace ofxSpout {
 			//send texture and retain any fbo bound for drawing
 			GLint drawFboId = 0;
 			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-			this->spoutSender->SendTexture(texture.getTextureData().textureID, texture.getTextureData().textureTarget, this->width, this->height, false, drawFboId);
+			this->spoutSender->SendTexture(texture.getTextureData().textureID, texture.getTextureData().textureTarget, this->width, this->height, invert, drawFboId);
 			return true;
 		}
 		catch (const char * e) {

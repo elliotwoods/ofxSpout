@@ -13,8 +13,9 @@ namespace ofxSpout {
 		bool init(string channelName, int initialWidth = 64, int initialHeight = 64);
 		void release();
 		bool isInitialized() const;
+		bool isMemoryShareMode();
 
-		bool send(const ofTexture &);
+		bool send(const ofTexture &, bool invert = false);
 
 		string getChannelName() const;
 		bool setVerticalSync(bool);
