@@ -10,6 +10,10 @@ Tested with:
 * Windows 8.1
 * Spout v2.004
 
+Requirements:
+
+* http://github.com/elliotwoods/ofxAddonLib
+
 # Usage
 
 ### Sending
