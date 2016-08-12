@@ -2,7 +2,7 @@
 
 			SpoutReceiver.h
 
-		Copyright (c) 2014-2015, Lynn Jarvis. All rights reserved.
+		Copyright (c) 2014-2016, Lynn Jarvis. All rights reserved.
 
 		Redistribution and use in source and binary forms, with or without modification, 
 		are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@ class SPOUT_DLLEXP SpoutReceiver {
 
 	bool CreateReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool bUseActive = false);
 	bool ReceiveTexture(char* Sendername, unsigned int &width, unsigned int &height, GLuint TextureID = 0, GLuint TextureTarget = 0, bool bInvert = false, GLuint HostFBO = 0);
-	bool ReceiveImage  (char* Sendername, unsigned int &width, unsigned int &height, unsigned char * pixels, GLenum glFormat = GL_RGBA, GLuint HostFBO = 0);
+	bool ReceiveImage(char* Sendername, unsigned int &width, unsigned int &height, unsigned char* pixels, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFBO=0);
 	bool CheckReceiver (char* Sendername, unsigned int &width, unsigned int &height, bool &bConnected);
 	bool GetImageSize  (char* Sendername, unsigned int &width, unsigned int &height, bool &bMemoryMode);
 	void ReleaseReceiver(); 
@@ -77,7 +77,7 @@ class SPOUT_DLLEXP SpoutReceiver {
 	bool SetVerticalSync(bool bSync = true);
 	int  GetVerticalSync();
 
-	Spout spout; // for debug
+	Spout spout; // for access to all functions
 
 protected :
 

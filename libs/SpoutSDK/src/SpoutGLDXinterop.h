@@ -2,14 +2,12 @@
 
 			spoutGLDXinterop.h
 
-		LJ - leadedge@adam.com.au
-
 		Functions to manage texture sharing using the NVIDIA GL/DX opengl extensions
 
 		https://www.opengl.org/registry/specs/NV/DX_interop.txt
 
 
-		Copyright (c) 2014-2015, Lynn Jarvis. All rights reserved.
+		Copyright (c) 2014-2016, Lynn Jarvis. All rights reserved.
 
 		Redistribution and use in source and binary forms, with or without modification, 
 		are permitted provided that the following conditions are met:
@@ -49,10 +47,6 @@
 #include <gl/glu.h> // For glerror
 #include <shlwapi.h> // for path functions
 
-// LJ DEBUG
-// #include <d3dx9.h> // Needed for D3DXLoadSurfaceFromSurface() 
-// #pragma comment(lib, "d3dx9.lib") 
-
 
 class SPOUT_DLLEXP spoutGLDXinterop {
 
@@ -64,31 +58,35 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 		// Initialization functions
 		bool LoadGLextensions(); // Load required opengl extensions
 		bool CreateInterop(HWND hWnd, const char* sendername, unsigned int width, unsigned int height, DWORD dwFormat, bool bReceive = true);
-		bool CheckInterop(HWND hWnd); // Check for successful open of the interop
+		// bool CheckInterop(HWND hWnd); // Check for successful open of the interop
 		void CleanupInterop(bool bExit = false); // Cleanup with flag to avoid unknown crash bug
 
-		void setSharedMemoryName(char* sharedMemoryName, bool bReceive = true); 
+		// void setSharedMemoryName(char* sharedMemoryName, bool bReceive = true); 
 		bool getSharedInfo(char* sharedMemoryName, SharedTextureInfo* info);
 		bool setSharedInfo(char* sharedMemoryName, SharedTextureInfo* info);
 		
 		bool WriteTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert=true,  GLuint HostFBO=0);
 		bool ReadTexture (GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert=false, GLuint HostFBO=0);
 
-		bool WriteTexturePixels(unsigned char *pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bAlignment = true);
-		bool ReadTexturePixels (unsigned char *pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, GLuint HostFBO=0);
+		bool WriteTexture(ID3D11Texture2D** texture);
+		bool ReadTexture (ID3D11Texture2D** texture);
 
-		bool WriteDword(GLuint TextureID, GLuint TextureTarget, DWORD dwValue);
-		bool ReadDword (GLuint TextureID, GLuint TextureTarget, DWORD &dwValue, unsigned int width, unsigned int height, bool bInvert = false);
-		unsigned __int32 iLastFrame;
+		bool WriteDX9surface(LPDIRECT3DSURFACE9 source_surface);
+
+		bool WriteTexturePixels(const unsigned char *pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFBO = 0);
+		bool ReadTexturePixels (unsigned char *pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFBO=0);
+
+		// PBO functions for external access
+		bool UnloadTexturePixels(GLuint TextureID, GLuint TextureTarget, 
+								 unsigned int width, unsigned int height,
+								 unsigned char *data, GLenum glFormat = GL_RGBA, GLuint HostFBO = 0);
+
+		bool LoadTexturePixels(GLuint TextureID, GLuint TextureTarget, 
+							   unsigned int width, unsigned int height,
+							   const unsigned char *data, GLenum glFormat = GL_RGBA);
 
 		bool InitOpenGL();
 		bool CloseOpenGL();
-
-
-
-		#ifdef USE_PBO_EXTENSIONS
-		bool LoadTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, unsigned char *data);
-		#endif
 
 		bool BindSharedTexture();
 		bool UnBindSharedTexture();
@@ -97,7 +95,7 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 		bool DrawToSharedTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, float max_x = 1.0, float max_y = 1.0, float aspect = 1.0, bool bInvert = false, GLuint HostFBO = 0);
 
 		// DX9
-		bool bUseDX9; // Use DX11 (default) or DX9
+		bool m_bUseDX9; // Use DX11 (default) or DX9
 		bool UseDX9(bool bDX9);
 		bool isDX9();
 
@@ -105,9 +103,12 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 		void SetDX9(bool bDX9);
 		bool GetDX9();
 
-		bool bUseMemory; // Use memoryshare
+		bool m_bUseMemory; // Use memoryshare
 		bool GetMemoryShareMode();
 		bool SetMemoryShareMode(bool bMem = true);
+		bool IsBGRAavailable(); // are the bgra extensions available
+		bool IsPBOavailable(); // Are pbo extensions supported
+		void SetBufferMode(bool bActive); // Set the pbo availability on or off
 
 		D3DFORMAT DX9format; // the DX9 texture format to be used
 		void SetDX9format(D3DFORMAT textureformat);
@@ -121,7 +122,7 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 
 		bool CreateDX9interop(unsigned int width, unsigned int height, DWORD dwFormat, bool bReceive = true);
 		bool OpenDirectX9(HWND hWnd); // Initialize and prepare DirectX9
-		void CleanupDX9();
+		void CleanupDX9(bool bExit = false);
 
 		// DX11
 		DXGI_FORMAT	DX11format; // the DX11 texture format to be used
@@ -130,15 +131,16 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 		bool CreateDX11interop(unsigned int width, unsigned int height, DWORD dwFormat, bool bReceive);
 		bool OpenDirectX11(); // Initialize and prepare DirectX11
 		bool DX11available(); // Test for DX11 by attempting to open a device
-		void CleanupDX11();
+		void CleanupDX11(bool bExit = false);
 
 		// Common
 		bool OpenDirectX(HWND hWnd, bool bDX9);
-		void CleanupDirectX();
+		void CleanupDirectX(bool bExit = false);
 		HANDLE LinkGLDXtextures(void* pDXdevice, void* pSharedTexture, HANDLE dxShareHandle, GLuint glTextureID);
 
 		// Utilities
 		bool GLDXcompatible();
+		bool isOptimus();
 		int GetVerticalSync();
 		bool SetVerticalSync(bool bSync = true);
 		bool GetAdapterInfo(char *renderadapter, 
@@ -147,11 +149,6 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 							int maxsize, bool &bUseDX9);
 		bool CheckSpout2004(); // LJ DEBUG - 2.005 transition utility TODO : remove
 		
-		// Registry read/write
-		// 20.11.15 - moved to SpoutDirectX class
-		// bool ReadDwordFromRegistry(DWORD *pValue, const char *subkey, const char *valuename);
-		// bool WriteDwordToRegistry(DWORD dwValue, const char *subkey, const char *valuename);
-
 		// Spout objects
 		spoutMemoryShare memoryshare; // Memory sharing
 		spoutSenderNames senders; // Sender management
@@ -162,16 +159,30 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 		HRESULT UnlockInteropObject(HANDLE hDevice, HANDLE *hObject);
 		
 		// Memoryshare functions
-		bool WriteMemory (GLuint TexID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = false);
-		bool ReadMemory  (GLuint TexID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = false);
-		bool WriteMemoryPixels (unsigned char *pixels, unsigned int width, unsigned int height);
-		bool ReadMemoryPixels  (unsigned char *pixels, unsigned int width, unsigned int height);
+		bool WriteMemory (GLuint TexID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = false,  GLuint HostFBO=0);
+		bool ReadMemory  (GLuint TexID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = false,  GLuint HostFBO=0);
+		
+		bool WriteMemoryPixels (const unsigned char *pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false);
+		bool ReadMemoryPixels  (unsigned char *pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false);
+		
 		bool DrawSharedMemory  (float max_x = 1.0, float max_y = 1.0, float aspect = 1.0, bool bInvert = false);
 		bool DrawToSharedMemory(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, float max_x = 1.0, float max_y = 1.0, float aspect = 1.0, bool bInvert = false, GLuint HostFBO = 0);
 
-		GLuint GetGLtextureID();
-		// GLuint GetTextureWidth();
-		// GLuint GetTextureHeight();
+		// Memory buffer utilities
+		bool FlipBuffer(const unsigned char *src, unsigned char *dst, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA); 
+		
+		void rgba2rgb (void* rgba_source, void *rgb_dest,  unsigned int width, unsigned int height, bool bInvert = false);
+		void rgba2bgr (void* rgba_source, void *rgb_dest,  unsigned int width, unsigned int height, bool bInvert = false);
+		void rgba2bgra(void* rgba_source, void *bgra_dest, unsigned int width, unsigned int height, bool bInvert = false);
+		void bgra2rgba(void* bgra_source, void *rgba_dest, unsigned int width, unsigned int height, bool bInvert = false);
+		void rgb2rgba (void* rgb_source,  void *rgba_dest, unsigned int width, unsigned int height, bool bInvert = false);
+		void bgr2rgba (void* bgr_source,  void *rgba_dest, unsigned int width, unsigned int height, bool bInvert = false);
+
+		// OpenGL utilities
+		bool CopyTexture(GLuint SourceID, GLuint SourceTarget, GLuint DestID, GLuint DestTarget,
+						 unsigned int width, unsigned int height, bool bInvert, GLuint HostFBO);
+			
+		GLuint GetGLtextureID(); // Get OpenGL shared texture ID
 
 		// Global texture and fbo used for texture sharing
 		GLuint m_glTexture; // the OpenGL texture linked to the shared DX texture
@@ -185,18 +196,21 @@ class SPOUT_DLLEXP spoutGLDXinterop {
 		ID3D11Device* g_pd3dDevice;        // DX11 device
 		ID3D11Texture2D* g_pSharedTexture; // The shared DX11 texture
 
+		// For debugging
 		void GLerror();
-		void PrintFBOstatus(GLenum status); // debug
-
+		void PrintFBOstatus(GLenum status);
 
 protected:
 
-		bool m_bInitialized;    // this instance initialized flag
-		bool bExtensionsLoaded; // extensions have been loaded
-		bool bFBOavailable;     // fbo extensions available
-		bool bBLITavailable;    // fbo blit extensions available
-		bool bPBOavailable;     // pbo extensions available
-		bool bSWAPavailable;    // swap extensions available
+		bool m_bInitialized;	  // this instance initialized flag
+		bool m_bExtensionsLoaded; // extensions have been loaded
+		unsigned int m_caps;      // extension capabilities
+		bool m_bFBOavailable;     // fbo extensions available
+		bool m_bBLITavailable;    // fbo blit extensions available
+		bool m_bPBOavailable;     // pbo extensions available
+		bool m_bSWAPavailable;    // swap extensions available
+		bool m_bBGRAavailable;    // BGRA extensions are supported
+		bool m_bGLDXavailable;    // GL/DX interop extensions are supported
 
 		HWND              m_hWnd;          // parent window
 		HANDLE            m_hSharedMemory; // handle to the texture info shared memory
@@ -204,6 +218,11 @@ protected:
 		GLuint            m_TexID;         // Local texture used for memoryshare functions
 		unsigned int      m_TexWidth;      // width and height of local texture
 		unsigned int      m_TexHeight;     // for testing changes of memoryshare sender size
+
+		// PBO support
+		GLuint m_pbo[2];
+		int PboIndex;
+		int NextPboIndex;
 
 		// DX11
 		ID3D11DeviceContext* g_pImmediateContext;
@@ -216,9 +235,6 @@ protected:
 		HANDLE m_hInteropDevice; // handle to the DX/GL interop device
 		HANDLE m_hInteropObject; // handle to the DX/GL interop object (the shared texture)
 		HANDLE m_hAccessMutex;   // Texture access mutex lock handle
-
-		// LJ DEBUG
-		HANDLE m_hReceiverAccessMutex;   // Texture access mutex lock handle
 
 		bool getSharedTextureInfo(const char* sharedMemoryName);
 		bool setSharedTextureInfo(const char* sharedMemoryName);
