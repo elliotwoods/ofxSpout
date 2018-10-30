@@ -1,6 +1,7 @@
 #include "Sender.h"
 
 #include "ofFbo.h"
+#include "ofMain.h"
 
 namespace ofxSpout {
 	//----------
