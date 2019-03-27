@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ofLog.h"
 #include "ofTexture.h"
 #include <string>
 #include "SpoutSender.h"
