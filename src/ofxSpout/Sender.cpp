@@ -65,12 +65,20 @@ namespace ofxSpout {
 	}
 
 	//----------
+	bool Sender::isMemoryShareMode() {
+		if (this->spoutSender) {
+			return spoutSender->GetMemoryShareMode();
+		}
+		else {
+			return false;
+		}
+	}
+	
+	//----------
 	bool Sender::send(const ofTexture & texture) {
 		if (!this->isInitialized()) {
 			ofLogError("ofxSpout::Sender::send") << "Sender not initialised";
 			return false; 
-		}
-		if (!texture.isAllocated()) {
 			ofLogError("ofxSpout::Sender::send") << "Texture empty";
 			return false;
 		}
