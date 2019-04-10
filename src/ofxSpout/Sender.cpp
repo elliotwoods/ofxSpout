@@ -66,35 +66,34 @@ namespace ofxSpout {
 
 	//----------
 	bool Sender::send(const ofTexture & texture) {
-		try {
-			if (!this->isInitialized()) {
-				throw("Not initialised");
-			}
-
-			//check if the sender matches the settings of the texture
-			if (this->width != texture.getWidth() || this->height != texture.getHeight()) {
-				this->width = texture.getWidth();
-				this->height = texture.getHeight();
-
-				//update the sender to match local settings
-				char mutableName[256];
-				strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
-				if (!this->spoutSender->UpdateSender(mutableName, this->width, this->height)) {
-					throw("Can't update sender");
-				}
-				this->channelName = string(mutableName);
-			}
-
-			//send texture and retain any fbo bound for drawing
-			GLint drawFboId = 0;
-			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-			this->spoutSender->SendTexture(texture.getTextureData().textureID, texture.getTextureData().textureTarget, this->width, this->height, false, drawFboId);
-			return true;
+		if (!this->isInitialized()) {
+			ofLogError("ofxSpout::Sender::send") << "Sender not initialised";
+			return false; 
 		}
-		catch (const char * e) {
-			ofLogError("ofxSpout::Sender::send") << e;
+		if (!texture.isAllocated()) {
+			ofLogError("ofxSpout::Sender::send") << "Texture empty";
 			return false;
 		}
+
+		//check if the sender matches the settings of the texture
+		if (this->width != texture.getWidth() || this->height != texture.getHeight()) {
+			this->width = texture.getWidth();
+			this->height = texture.getHeight();
+
+			//update the sender to match local settings
+			char mutableName[256];
+			strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
+			if (!this->spoutSender->UpdateSender(mutableName, this->width, this->height)) {
+				throw("Can't update sender");
+			}
+			this->channelName = string(mutableName);
+		}
+
+		//send texture and retain any fbo bound for drawing
+		GLint drawFboId = 0;
+		glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+		this->spoutSender->SendTexture(texture.getTextureData().textureID, texture.getTextureData().textureTarget, this->width, this->height, false, drawFboId);
+		return true;
 	}
 
 	//-----------

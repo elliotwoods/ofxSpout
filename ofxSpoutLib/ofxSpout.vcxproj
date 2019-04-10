@@ -50,7 +50,7 @@
     <ClCompile Include="..\src\ofxSpout\Utils.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C087079E-2A0E-4B85-A479-C28E2D01A048}</ProjectGuid>
+    <ProjectGuid>{3985EE69-9945-40C4-839B-C21A17D5F151}</ProjectGuid>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -86,25 +86,25 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\libs\openFrameworksCompiled\project\vs\openFrameworksDebug.props" />
-    <Import Project="..\..\ofxAddonLib\ofxAddonLib.props" />
+    <Import Project="..\..\..\addons\ofxAddonLib\ofxAddonLib.props" />
     <Import Project="ofxSpout.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\libs\openFrameworksCompiled\project\vs\openFrameworksDebug.props" />
-    <Import Project="..\..\ofxAddonLib\ofxAddonLib.props" />
+    <Import Project="..\..\..\addons\ofxAddonLib\ofxAddonLib.props" />
     <Import Project="ofxSpout.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\libs\openFrameworksCompiled\project\vs\openFrameworksRelease.props" />
-    <Import Project="..\..\ofxAddonLib\ofxAddonLib.props" />
+    <Import Project="..\..\..\addons\ofxAddonLib\ofxAddonLib.props" />
     <Import Project="ofxSpout.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\..\libs\openFrameworksCompiled\project\vs\openFrameworksRelease.props" />
-    <Import Project="..\..\ofxAddonLib\ofxAddonLib.props" />
+    <Import Project="..\..\..\addons\ofxAddonLib\ofxAddonLib.props" />
     <Import Project="ofxSpout.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
