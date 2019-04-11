@@ -16,7 +16,7 @@ namespace ofxSpout {
 		bool isInitialized() const;
 		bool isMemoryShareMode();
 
-		bool send(const ofTexture &, bool flipY = false);
+		bool send(const ofTexture &);
 
 		string getChannelName() const;
 		bool setVerticalSync(bool);
