@@ -6,12 +6,16 @@ void ofApp::setup(){
 	ofSetFrameRate(60);
 
 	camera.initGrabber(640, 480);
+	
+	// Initialise the Spout sender with a channel name
 	sender.init("Camera");
 }
 	
 //--------------------------------------------------------------
 void ofApp::update(){
 	camera.update();
+	
+	// Send the camera's texture once per frame
 	sender.send(camera.getTexture());
 }
 
