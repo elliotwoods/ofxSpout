@@ -5,9 +5,6 @@
 	Spout memory map management for sharing images via shared memory
 	Revised over original single reader/writer pair
 
-
-	LJ - leadedge@adam.com.au
-
 	Thanks and credit to Malcolm Bechard for the SpoutSharedMemory class
 
 	https://github.com/mbechard	
@@ -16,9 +13,13 @@
 	21.08.15 - started class file
 	25.09.15 - set sendermem object pointer to NULL in constructor
 	11.10.15 - introduced global width and height and GetSenderMemorySize function
-
+	29.02.16 - cleanup
+	23.10.18 - Allow for RGB size buffers
+	27.10.18 - Added log warnings
+	13.11.18 - Remove using std namespace
 	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	Copyright (c) 2014-2016, Lynn Jarvis. All rights reserved.
+
+	Copyright (c) 2014-2019, Lynn Jarvis. All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without modification, 
 	are permitted provided that the following conditions are met:
@@ -63,9 +64,9 @@ spoutMemoryShare::~spoutMemoryShare() {
 
 // SENDER : Create a sender named shared memory map
 // RECEIVER : Attach to an existing named shared memory map
-bool spoutMemoryShare::CreateSenderMemory(const char *sendername, unsigned int width, unsigned int height)
+bool spoutMemoryShare::CreateSenderMemory(const char *sendername, unsigned int width, unsigned int height, GLenum glFormat)
 {
-	string namestring = sendername;
+	std::string namestring = sendername;
 
 	// Create a name for the map from the sender name
 	namestring += "_map";
@@ -74,14 +75,15 @@ bool spoutMemoryShare::CreateSenderMemory(const char *sendername, unsigned int w
 	if(senderMem) delete senderMem;
 	senderMem = new SpoutSharedMemory();
 
-	// printf("CreateSenderMemory (%s, %d)\n", namestring.c_str(), width*height*4);
-
 	// Create a shared memory map for this sender
-	// Allocate enough width*height*4 - RGBA image
-	SpoutCreateResult result = senderMem->Create(namestring.c_str(), width*height*4 );
-
+	// Allocate enough width*height*4 for an RGBA image
+	SpoutCreateResult result = SPOUT_CREATE_FAILED;
+	if(glFormat == GL_RGB)
+		result = senderMem->Create(namestring.c_str(), width*height*3);
+	else
+		result = senderMem->Create(namestring.c_str(), width*height*4);
 	if(result == SPOUT_CREATE_FAILED) {
-		// printf("CreateSenderMemory : failed\n");
+		SpoutLogWarning("spoutMemoryShare::CreateSenderMemory - shared memory create failed");
 		delete senderMem;
 		senderMem = NULL;
 		m_Width = 0;
@@ -102,20 +104,26 @@ bool spoutMemoryShare::CreateSenderMemory(const char *sendername, unsigned int w
 // Only the sender can update the memory map size by creating a new one because 
 // the sender creates the map and it's map handle cannot be released by a receiver,
 // so a new map cannot be created by a receiver.
-bool spoutMemoryShare::UpdateSenderMemorySize(const char *sendername, unsigned int width, unsigned int height)
+bool spoutMemoryShare::UpdateSenderMemorySize(const char *sendername, unsigned int width, unsigned int height, GLenum glFormat)
 {
-	string namestring = sendername;
+	std::string namestring = sendername;
 
 	namestring += "_map";
 
-	// Delete the existing sender shared memory object - Releases mutex and maps
+	// Delete the existing sender shared memory object
+	// Releases shared memory and mutex
 	if(senderMem) delete senderMem;
-	// Create a new shared memory map for this sender
+
+	// Create a new shared memory map for this sender with the updated size
 	senderMem = new SpoutSharedMemory();
 
-	SpoutCreateResult result = senderMem->Create(namestring.c_str(), width*height*4 );
+	SpoutCreateResult result = SPOUT_CREATE_FAILED;
+	if (glFormat == GL_RGB)
+		result = senderMem->Create(namestring.c_str(), width*height*3);
+	else
+		result = senderMem->Create(namestring.c_str(), width*height*4);
 	if(result == SPOUT_CREATE_FAILED) {
-		// printf("UpdateSenderMemory failed\n");
+		SpoutLogWarning("spoutMemoryShare::UpdateSenderMemorySize - shared memory create failed");
 		delete senderMem;
 		senderMem = NULL;
 		m_Width = 0;
@@ -136,35 +144,21 @@ bool spoutMemoryShare::UpdateSenderMemorySize(const char *sendername, unsigned i
 // RECEIVER : Open an existing named shared memory map
 bool spoutMemoryShare::OpenSenderMemory(const char *sendername)
 {
-	string namestring = sendername;
+	std::string namestring = sendername;
 
 	// Create a name for the map from the sender name
 	namestring += "_map";
 
 	// Create a new shared memory class object for this receiver
-	// if(senderMem) delete senderMem;
-	// senderMem = new SpoutSharedMemory();
-	// LJ DEBUG
 	if(!senderMem) senderMem = new SpoutSharedMemory();
 
-	// printf("OpenSenderMemory (%s, %x)\n", namestring.c_str(), senderMem);
-
+	// Open the sender's shared memory map.
+	// This also creates a mutex for the receiver
+	// to lock and unlock the map for reads.
 	if(!senderMem->Open(namestring.c_str()) ) {
-		// printf("OpenSenderMemory : failed\n");
-		// printf("OpenSenderMemory (%s) failed\n", namestring.c_str());
-		// LJ DEBUG
-		// delete senderMem;
-		// senderMem = NULL;
+		SpoutLogWarning("spoutMemoryShare::OpenSenderMemory - open shared memory failed");
 		return false;
 	}
-
-	// printf("OpenSenderMemory (%s) OK\n", namestring.c_str());
-
-	// TODO : Set the global width and height - how ?
-	// m_Width = width;
-	// m_Height = height;
-
-	// printf("OpenSenderMemory - senderMem [%x]\n", senderMem);
 
 	return true;
 		
@@ -213,8 +207,8 @@ unsigned char * spoutMemoryShare::LockSenderMemory()
 
 	char *pBuf = senderMem->Lock();
 	if (!pBuf) {
-		senderMem->Unlock();
-		// printf("spoutMemoryShare::LockSenderMemory - error 1\n");
+		// https://github.com/leadedge/Spout2/issues/15
+		// senderMem->Unlock();
 		return NULL;
 	}
 
@@ -228,5 +222,4 @@ void spoutMemoryShare::UnlockSenderMemory()
 
 	senderMem->Unlock();
 }
-
 

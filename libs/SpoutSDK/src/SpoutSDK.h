@@ -5,10 +5,10 @@
 	The main SDK include file
 
 
-		Copyright (c) 2014-2015, Lynn Jarvis. All rights reserved.
+	Copyright (c) 2014-2019, Lynn Jarvis. All rights reserved.
 
-		Redistribution and use in source and binary forms, with or without modification, 
-		are permitted provided that the following conditions are met:
+	Redistribution and use in source and binary forms, with or without modification, 
+	are permitted provided that the following conditions are met:
 
 		1. Redistributions of source code must retain the above copyright notice, 
 		   this list of conditions and the following disclaimer.
@@ -17,15 +17,15 @@
 		   this list of conditions and the following disclaimer in the documentation 
 		   and/or other materials provided with the distribution.
 
-		THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"	AND ANY 
-		EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-		OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE	ARE DISCLAIMED. 
-		IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-		INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-		PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-		INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-		LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-		OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"	AND ANY 
+	EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+	OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE	ARE DISCLAIMED. 
+	IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+	INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+	PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+	INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+	LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 #pragma once
@@ -40,25 +40,28 @@
 #include <Mmsystem.h> // for timegettime
 #include <direct.h>   // for _getcwd
 #include <shlwapi.h>  // for path functions
-#include "Shellapi.h" // for shellexecute
+#include <Shellapi.h> // for shellexecute
+#include <Tlhelp32.h> // for listing processes
+#include <tchar.h>    // for _tcsicmp
 
 #pragma comment(lib, "shlwapi.lib")  // for path functions
 #pragma comment(lib, "Shell32.lib")  // for shellexecute
 #pragma comment(lib, "Advapi32.lib") // for registry functions
 #pragma comment(lib, "Version.lib")  // for VersionInfo API
 
-
 #include "SpoutCommon.h"
 #include "spoutMemoryShare.h"
 #include "SpoutSenderNames.h"
-#include "spoutGLDXinterop.h"
+#include "SpoutGLDXinterop.h"
 
-
+// Compile flag only - not currently used
 #if defined(__x86_64__) || defined(_M_X64)
 	#define is64bit
 // #elif defined(__i386) || defined(_M_IX86)
 //	x86 32-bit
 #endif
+
+using namespace spoututils;
 
 class SPOUT_DLLEXP Spout {
 
@@ -67,34 +70,48 @@ class SPOUT_DLLEXP Spout {
 	Spout();
     ~Spout();
 
-	// ================== //
-	//	PUBLIC FUNCTIONS  //
-	// ================== //
+	spoutGLDXinterop interop; // Opengl/directx interop texture sharing object
+
+	// ==================
+	//	PUBLIC FUNCTIONS
+	// ==================
+
+	
+	// Initialize Spout
+	bool OpenSpout();
 
 	// Sender
-	bool CreateSender  (const char *Sendername, unsigned int width, unsigned int height, DWORD dwFormat = 0);
-	bool UpdateSender  (const char* Sendername, unsigned int width, unsigned int height);
-	void ReleaseSender (DWORD dwMsec = 0);
-	bool SendTexture   (GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert=true, GLuint HostFBO=0);
-	bool SendImage     (unsigned char* pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bAlignment = true, bool bInvert=false);
+	bool CreateSender(const char *Sendername, unsigned int width, unsigned int height, DWORD dwFormat = 0);
+	bool UpdateSender(const char* Sendername, unsigned int width, unsigned int height);
+	void ReleaseSender(DWORD dwMsec = 0);
+	bool SendTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = true, GLuint HostFBO = 0);
+	bool SendFboTexture(GLuint FboID, unsigned int width, unsigned int height, bool bInvert = true);
+	bool SendImage(const unsigned char* pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFBO = 0);
+	void RemovePadding(const unsigned char *source, unsigned char *dest, unsigned int width, unsigned int height, unsigned int stride, GLenum glFormat = GL_RGBA);
 
 	// Receiver
-	bool CreateReceiver (char* Sendername, unsigned int &width, unsigned int &height, bool bUseActive = false);
+	bool CreateReceiver(char* sendername, unsigned int &width, unsigned int &height, bool bUseActive = false);
 	void ReleaseReceiver(); 
-	bool ReceiveTexture (char* Sendername, unsigned int &width, unsigned int &height, GLuint TextureID = 0, GLuint TextureTarget = 0, bool bInvert = false, GLuint HostFBO=0);
-	bool ReceiveImage   (char* Sendername, unsigned int &width, unsigned int &height, unsigned char* pixels, GLenum glFormat = GL_RGBA, GLuint HostFBO=0);
-	bool CheckReceiver	(char* Sendername, unsigned int &width, unsigned int &height, bool &bConnected);
-	bool GetImageSize   (char* sendername, unsigned int &width, unsigned int &height, bool &bMemoryMode);	
+	bool ReceiveTexture(char* Sendername, unsigned int &width, unsigned int &height, GLuint TextureID = 0, GLuint TextureTarget = 0, bool bInvert = false, GLuint HostFBO = 0);
+	bool ReceiveImage(char* Sendername, unsigned int &width, unsigned int &height, unsigned char* pixels, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFBO = 0);
+	bool SelectSenderPanel(const char* message = NULL);
+	bool CheckReceiver(char* sendername, unsigned int &width, unsigned int &height, bool &bConnected);
+	bool IsSpoutInitialized(); // sender or receiver
 
+#ifdef legacyOpenGL
+	// Legacy Draw and Drawto functions
+	bool DrawSharedTexture(float max_x = 1.0, float max_y = 1.0, float aspect = 1.0, bool bInvert = true, GLuint HostFBO = 0);
+	bool DrawToSharedTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, float max_x = 1.0, float max_y = 1.0, float aspect = 1.0, bool bInvert = false, GLuint HostFBO = 0);
+#endif
+
+	// Texture access
 	bool BindSharedTexture();
 	bool UnBindSharedTexture();
-	
-	bool DrawSharedTexture(float max_x = 1.0, float max_y = 1.0, float aspect = 1.0, bool bInvert = true);
-	bool DrawToSharedTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, float max_x = 1.0, float max_y = 1.0, float aspect = 1.0, bool bInvert = false, GLuint HostFBO = 0);
 
-	int  GetSenderCount ();
-	bool GetSenderName  (int index, char* sendername, int MaxSize = 256);
-	bool GetSenderInfo  (const char* sendername, unsigned int &width, unsigned int &height, HANDLE &dxShareHandle, DWORD &dwFormat);
+	// Sender names
+	int  GetSenderCount();
+	bool GetSender(int index, char* sendername, int MaxSize = 256);
+	bool GetSenderInfo(const char* sendername, unsigned int &width, unsigned int &height, HANDLE &dxShareHandle, DWORD &dwFormat);
 	bool GetActiveSender(char* Sendername);
 	bool SetActiveSender(const char* Sendername);
 	
@@ -103,9 +120,19 @@ class SPOUT_DLLEXP Spout {
 	bool GetDX9(); // Return the flag that has been set
 	bool SetMemoryShareMode(bool bMem = true);
 	bool GetMemoryShareMode();
+	int  GetShareMode();
+	bool SetShareMode(int mode);
 	int  GetMaxSenders(); // Get maximum senders allowed
 	void SetMaxSenders(int maxSenders); // Set maximum senders allowed
+	
+	// Access to globals
+	bool GetSpoutSenderName(char * sendername, int maxchars); // get the global sender name
 
+	// PBO mode switch
+	void SetBufferMode(bool bActive); // Set the pbo availability on or off
+	bool GetBufferMode();
+
+	// Adapter functions
 	int  GetNumAdapters(); // Get the number of graphics adapters in the system
 	bool GetAdapterName(int index, char *adaptername, int maxchars); // Get an adapter name
 	bool SetAdapter(int index = 0); // Set required graphics adapter for output
@@ -115,23 +142,16 @@ class SPOUT_DLLEXP Spout {
 
 	int  GetVerticalSync();
 	bool SetVerticalSync(bool bSync = true);
-	bool SelectSenderPanel(const char* message = NULL);
 
-	bool CheckSpoutPanel(); // Public for debugging
-	bool OpenSpout(); // Public for debugging
-	
-	// Registry read/write
-	bool WritePathToRegistry (const char *filepath, const char *subkey, const char *valuename);
-	bool ReadPathFromRegistry(char *filepath, const char *subkey, const char *valuename);
-	bool RemovePathFromRegistry(const char *subkey, const char *valuename);
-	
-	spoutGLDXinterop interop; // Opengl/directx interop texture sharing
+	// OpenGL utilities
+	bool CreateOpenGL();
+	bool CloseOpenGL();
 
-	// Public - for debugging only - to disable/enable texture access locks in SpoutDirectX.cpp
-	void UseAccessLocks(bool bUseLocks);
-	void SpoutCleanUp(bool bExit = false);
+	// Public for debugging only
+	bool CheckSpoutPanel();
+	void SpoutCleanUp();
 	void CleanSenders();
-
+	int ReportMemory();
 
 /*
 //
@@ -161,52 +181,51 @@ class SPOUT_DLLEXP Spout {
     DXGI_FORMAT_B8G8R8X8_UNORM_SRGB         = 93,
 
 */
+//	DXGI_FORMAT_R16G16B16A16_UNORM
 
 	protected :
 
-	// ================================= //
-	//  PRIVATE VARIABLES AND FUNCTIONS  //
-	// ================================= //
-	char g_SharedMemoryName[256];
+	// PRIVATE VARIABLES AND FUNCTIONS
+
+	// Receiver and sender
+	char m_SenderNameSetup[256];
+	char m_SenderName[256];
+	GLenum m_glFormat;
+	bool m_bInvert;
+	bool m_bUpdate;
+	bool m_bUseActive;
+	unsigned int m_Width;
+	unsigned int m_Height;
+
+	// Globals
 	char UserSenderName[256]; // used for the sender selection dialog
-	unsigned int g_Width;
+	char g_SharedMemoryName[256]; //name for sender shared memory info
+	unsigned int g_Width; // width and height to check for changes
 	unsigned int g_Height;
-	HANDLE g_ShareHandle;
-	DWORD g_Format;
-	GLuint g_TexID;
+	HANDLE g_ShareHandle; // Sender txture share handle
+	DWORD g_Format; // Sender texture format
+	DWORD g_PartnerID; // Free - can be used
+
 	HWND g_hWnd;
-	bool bMemory; // force memoryshare flag
-	bool bGLDXcompatible;
-	bool bMemoryShareInitOK;
-	bool bDxInitOK;
-	bool bInitialized;
+	bool bDxInitOK; // DirectX initialized OK
+	bool bMemory; // Use memoryshare backup
+	bool bInitialized; // Sender or receiver has initialized
 	bool bIsSending;
 	bool bIsReceiving;
 	bool bChangeRequested;
 	bool bSpoutPanelOpened;
 	bool bSpoutPanelActive;
 	bool bUseActive; // Use the active sender for CreateReceiver
-	SHELLEXECUTEINFOA ShExecInfo;
+	SHELLEXECUTEINFOA m_ShExecInfo;
 
-	bool GLDXcompatible();
-	bool OpenReceiver (char *name, unsigned int& width, unsigned int& height);
-	bool InitReceiver (HWND hwnd, char* sendername, unsigned int width, unsigned int height, bool bMemoryMode);
-	bool InitSender   (HWND hwnd, const char* sendername, unsigned int width, unsigned int height, DWORD dwFormat, bool bMemoryMode);
+	bool OpenReceiver(char *name, unsigned int& width, unsigned int& height);
+	bool InitReceiver(HWND hwnd, char* sendername, unsigned int width, unsigned int height, HANDLE hSharehandle, DWORD dwFormat);
 	
-	bool InitMemoryShare(bool bReceiver);
-	bool ReleaseMemoryShare();
-	bool FlipVertical(unsigned char *src, unsigned int width, unsigned int height, GLenum glFormat = GL_RGB);
-
-	// FPS calcs - TODO cleanup
-	double timeNow, timeThen, elapsedTime, frameTime, lastFrameTime, frameRate, fps, PCFreq, waitMillis, millisForFrame;
-	__int64 CounterStart;
+	bool InitSender(HWND hwnd, const char* sendername, unsigned int width, unsigned int height, DWORD dwFormat);
+	bool InitSender(HWND hwnd, const char* sendername, unsigned int width, unsigned int height, DWORD dwFormat, bool bMemoryMode);
 
 	// Find a file version
 	bool FindFileVersion(const char *filepath, DWORD &versMS, DWORD &versLS);
-
-	// TODO - used ? cleanup
-	void StartCounter();
-	double GetCounter();
 
 };
 
