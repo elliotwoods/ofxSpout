@@ -11,7 +11,7 @@ namespace ofxSpout {
 		Receiver();
 		~Receiver();
 
-		bool init(string channelName = "");
+		bool init(std::string channelName = "");
 		void release();
 		bool isInitialized() const;
 
@@ -19,11 +19,11 @@ namespace ofxSpout {
 
 		bool selectSenderPanel();
 
-		string getChannelName() const;
+		std::string getChannelName() const;
 		float getWidth() const;
 		float getHeight() const;
 	protected:
-		string channelName;
+		std::string channelName;
 
 		SpoutReceiver * spoutReceiver;
 		int width;

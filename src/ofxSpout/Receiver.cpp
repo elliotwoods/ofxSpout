@@ -17,7 +17,7 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Receiver::init(string channelName) {
+	bool Receiver::init(std::string channelName) {
 		this->release();
 
 		try {
@@ -29,7 +29,7 @@ namespace ofxSpout {
 			if (!this->spoutReceiver->CreateReceiver(mutableName, mutableWidth, mutableHeight, channelName.empty())) {
 				throw("Can't create receiver");
 			}
-			this->channelName = string(mutableName);
+			this->channelName = std::string(mutableName);
 			this->width = mutableWidth;
 			this->height = mutableHeight;
 			return true;
@@ -116,7 +116,7 @@ namespace ofxSpout {
 	}
 	
 	//-----------
-	string Receiver::getChannelName() const {
+	std::string Receiver::getChannelName() const {
 		return this->channelName;
 	}
 

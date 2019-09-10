@@ -11,18 +11,18 @@ namespace ofxSpout {
 		Sender();
 		~Sender();
 
-		bool init(string channelName, int initialWidth = 64, int initialHeight = 64);
+		bool init(std::string channelName, int initialWidth = 64, int initialHeight = 64);
 		void release();
 		bool isInitialized() const;
 		bool isMemoryShareMode();
 
 		bool send(const ofTexture &);
 
-		string getChannelName() const;
+		std::string getChannelName() const;
 		bool setVerticalSync(bool);
 		bool getVerticalSync();
 	protected:
-		string channelName;
+		std::string channelName;
 
 		SpoutSender * spoutSender;
 		int width, height;

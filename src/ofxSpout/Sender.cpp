@@ -16,7 +16,7 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Sender::init(string channelName, int initialWidth, int initialHeight) {
+	bool Sender::init(std::string channelName, int initialWidth, int initialHeight) {
 		//unitialise any existing sender
 		this->release();
 
@@ -32,7 +32,7 @@ namespace ofxSpout {
 			if (!this->spoutSender->CreateSender(mutableName, this->width, this->height)) {
 				throw("Can't create sender");
 			}
-			this->channelName = string(mutableName);
+			this->channelName = std::string(mutableName);
 			return true;
 		}
 		catch (const char * e) {
@@ -94,7 +94,7 @@ namespace ofxSpout {
 			if (!this->spoutSender->UpdateSender(mutableName, this->width, this->height)) {
 				throw("Can't update sender");
 			}
-			this->channelName = string(mutableName);
+			this->channelName = std::string(mutableName);
 		}
 
 		//send texture and retain any fbo bound for drawing
@@ -105,7 +105,7 @@ namespace ofxSpout {
 	}
 
 	//-----------
-	string Sender::getChannelName() const {
+	std::string Sender::getChannelName() const {
 		return this->channelName;
 	}
 
