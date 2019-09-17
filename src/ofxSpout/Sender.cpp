@@ -1,5 +1,7 @@
 #include "Sender.h"
 
+#include "Utils.h"
+
 #include "ofFbo.h"
 
 namespace ofxSpout {
@@ -16,7 +18,7 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Sender::init(std::string channelName, int initialWidth, int initialHeight) {
+	bool Sender::init(std::string channelName, int initialWidth, int initialHeight, int glFormat) {
 		//unitialise any existing sender
 		this->release();
 
@@ -25,11 +27,12 @@ namespace ofxSpout {
 
 			this->width = initialWidth;
 			this->height = initialHeight;
+			this->glFormat = glFormat;
 
 			//create the sender, and allow for Spout to change our channel name
 			char mutableName[256];
 			strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
-			if (!this->spoutSender->CreateSender(mutableName, this->width, this->height)) {
+			if (!this->spoutSender->CreateSender(mutableName, this->width, this->height, toDXFormat(this->glFormat))) {
 				throw("Can't create sender");
 			}
 			this->channelName = std::string(mutableName);
