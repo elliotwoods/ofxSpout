@@ -18,6 +18,11 @@ namespace ofxSpout {
 	}
 
 	//----------
+	bool Sender::init(std::string channelName, const ofTexture& texture) {
+		return this->init(channelName, texture.getWidth(), texture.getHeight(), texture.getTextureData().glInternalFormat);
+	}
+
+	//----------
 	bool Sender::init(std::string channelName, int initialWidth, int initialHeight, int glFormat) {
 		//unitialise any existing sender
 		this->release();
