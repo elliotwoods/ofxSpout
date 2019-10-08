@@ -21,6 +21,7 @@
 //					- currently not used - see SpoutSDK.cpp CreateSender
 //		14.11.15	- changed functions to "const char *" where required
 //		18.11.15	- added CheckReceiver so that DrawSharedTexture can be used by a receiver
+//		18.06.16	- Add invert to ReceiveImage
 //
 // ====================================================================================
 /*
@@ -72,9 +73,15 @@ bool SpoutReceiver::ReceiveTexture(char* name, unsigned int &width, unsigned int
 
 
 //---------------------------------------------------------
-bool SpoutReceiver::ReceiveImage(char* name, unsigned int &width, unsigned int &height, unsigned char* pixels, GLenum glFormat, GLuint HostFBO)
+bool SpoutReceiver::ReceiveImage(char* Sendername, 
+								 unsigned int &width, 
+								 unsigned int &height, 
+								 unsigned char* pixels, 
+								 GLenum glFormat, 
+								 bool bInvert,
+								 GLuint HostFBO)
 {
-	return spout.ReceiveImage(name, width, height, pixels, glFormat, HostFBO);
+	return spout.ReceiveImage(Sendername, width, height, pixels, glFormat, bInvert, HostFBO);
 }
 
 

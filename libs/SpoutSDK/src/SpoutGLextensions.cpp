@@ -9,6 +9,9 @@
 //
 //			01.09.15	- added MessageBox error warning in LoadGLextensions
 //			11.11.15	- removed (unsigned) cast from GetProcAddress in FBO extensions
+//			17.03.16	- added bgra extensions to find out if they are supported at compile and runtime
+//			28.03.16	- caps is returned instead of fail for interop extensions
+//			29.03.16	- Fixed loadInteropExtensions flag test in loadGLextensions
 //
 
 		Copyright (c) 2014-2016, Lynn Jarvis. All rights reserved.
@@ -79,12 +82,12 @@ PFNWGLGETSWAPINTERVALEXTPROC			wglGetSwapIntervalEXT			= NULL;
 
 // PBO extensions
 #ifdef USE_PBO_EXTENSIONS
-glGenBuffersPROC						glGenBuffers					= NULL;
-glDeleteBuffersPROC						glDeleteBuffers					= NULL;
-glBindBufferPROC						glBindBuffer					= NULL;
-glBufferDataPROC						glBufferData					= NULL;
-glMapBufferPROC							glMapBuffer						= NULL;
-glUnmapBufferPROC						glUnmapBuffer					= NULL;
+glGenBuffersPROC						glGenBuffersEXT					= NULL;
+glDeleteBuffersPROC						glDeleteBuffersEXT				= NULL;
+glBindBufferPROC						glBindBufferEXT					= NULL;
+glBufferDataPROC						glBufferDataEXT					= NULL;
+glMapBufferPROC							glMapBufferEXT					= NULL;
+glUnmapBufferPROC						glUnmapBufferEXT				= NULL;
 #endif
 
 #endif
@@ -194,7 +197,8 @@ bool loadFBOextensions() {
 
 #endif
 
-	return true;
+	// Unreachable
+	// return true;
 }
 
 
@@ -243,19 +247,19 @@ bool loadPBOextensions()
 		return false;
 	#else
 	try { // load extensions for PBO
-		glGenBuffers	= (glGenBuffersPROC)wglGetProcAddress("glGenBuffers");
-		glDeleteBuffers = (glDeleteBuffersPROC)wglGetProcAddress("glDeleteBuffers");
-		glBindBuffer	= (glBindBufferPROC)wglGetProcAddress("glBindBuffer");
-		glBufferData	= (glBufferDataPROC)wglGetProcAddress("glBufferData");
-		glMapBuffer		= (glMapBufferPROC)wglGetProcAddress("glMapBuffer");
-		glUnmapBuffer	= (glUnmapBufferPROC)wglGetProcAddress("glUnmapBuffer");
+		glGenBuffersEXT	= (glGenBuffersPROC)wglGetProcAddress("glGenBuffers");
+		glDeleteBuffersEXT = (glDeleteBuffersPROC)wglGetProcAddress("glDeleteBuffers");
+		glBindBufferEXT	= (glBindBufferPROC)wglGetProcAddress("glBindBuffer");
+		glBufferDataEXT	= (glBufferDataPROC)wglGetProcAddress("glBufferData");
+		glMapBufferEXT = (glMapBufferPROC)wglGetProcAddress("glMapBuffer");
+		glUnmapBufferEXT = (glUnmapBufferPROC)wglGetProcAddress("glUnmapBuffer");
 	}
 	catch (...) {
 		return false;
 	}
-	if(glGenBuffers != NULL && glDeleteBuffers != NULL
-	&& glBindBuffer != NULL && glBufferData    != NULL
-	&& glMapBuffer  != NULL && glUnmapBuffer   != NULL) {
+	if(glGenBuffersEXT != NULL && glDeleteBuffersEXT != NULL
+	&& glBindBufferEXT != NULL && glBufferDataEXT    != NULL
+	&& glMapBufferEXT  != NULL && glUnmapBufferEXT   != NULL) {
 		return true;
 	}
 	else {
@@ -265,7 +269,7 @@ bool loadPBOextensions()
 
 #endif
 
-	return true;
+	// return true;
 
 }
 
@@ -320,14 +324,6 @@ unsigned int loadGLextensions() {
 		return 0;
 	}
 
-	// Load wgl interop extensions - return if fail
-	if (!loadInteropExtensions()) {
-		// MessageBoxA(NULL, "Cannot load OpenGL interop extensions", "ERROR", MB_OK);
-		printf("    loadInteropExtensions fail\n");
-		return 0;
-	}
-
-	caps |= GLEXT_SUPPORT_NVINTEROP;
 	caps |= GLEXT_SUPPORT_FBO;
 
 	// Load PBO extension and FBO blit extension
@@ -343,6 +339,123 @@ unsigned int loadGLextensions() {
 		caps |= GLEXT_SUPPORT_PBO;
 	}
 
+	// Find out whether bgra extensions are supported at compile and runtime
+	#ifdef GL_EXT_bgra
+	//
+	// "isExtensionSupported" code yet to be fully tested for
+	// various compilers, operating systems and environments.
+	// Activate this code if you are confident that it works OK.
+	// 
+	// if(isExtensionSupported("GL_EXT_bgra")) {
+		caps |= GLEXT_SUPPORT_BGRA;
+	// }
+	#endif
+
+	// Load wgl interop extensions - not needed for memoryshare
+	if (loadInteropExtensions()) {
+		caps |= GLEXT_SUPPORT_NVINTEROP;
+	}
+
+
+
 	return caps;
 
 }
+
+
+//
+// Used to determine support for GL_EXT_bgra extensions
+// Currently not used
+/*
+bool isExtensionSupported(const char *extension)
+{
+	const char * extensionsstr = NULL;
+	const char * versionstr = NULL;
+	const char * start;
+	const char * exc;
+	char *where, *terminator;
+	int n, i;
+
+	// Extension names should not have spaces.
+	where = (char *)strchr(extension, ' ');
+	if (where || *extension == '\0')
+		return false;
+
+	versionstr = (const char *)glGetString(GL_VERSION);
+	// printf("OpenGL version (%s)\n", versionstr);
+
+	extensionsstr = (const char *)glGetString(GL_EXTENSIONS);
+
+	#ifndef GL_NUM_EXTENSIONS
+	#define GL_NUM_EXTENSIONS 0x821D // in gl3.h
+	#endif
+
+	if(extensionsstr == NULL) {
+
+		// printf("glGetString(GL_VERSION) not supported\n");
+
+		//
+		// glGetstring not supported
+		//
+		// Code adapted from : https://bitbucket.org/Coin3D/coin/issues/54/support-for-opengl-3x-specifically
+		//
+
+		typedef GLubyte* (APIENTRY * COIN_PFNGLGETSTRINGIPROC)(GLenum enm, GLuint idx);
+		COIN_PFNGLGETSTRINGIPROC glGetStringi = 0;
+		glGetStringi = (COIN_PFNGLGETSTRINGIPROC)wglGetProcAddress("glGetStringi");
+		if(glGetStringi != NULL) {
+			glGetIntegerv(GL_NUM_EXTENSIONS, &n);
+			// printf("%d extensions\n", n);
+			if(n > 0) {
+				for (i = 0; i < n; i++) {
+					exc = (const char *)glGetStringi(GL_EXTENSIONS, i);
+					if(strcmp(exc, extension) == 0) {
+						break;
+					}
+				}
+				if(i < n) {
+					// printf("glGetStringi(%d) %s found\n", i, exc);
+					return true;
+				}
+			}
+			else {
+				// printf("glGetIntegerv(GL_NUM_EXTENSIONS) did not return a value\nso unable to get extensions for this gl driver\n");
+			}
+		}
+		else {
+			// printf("glGetString(GL_EXTENSIONS) returned null, but glGetStringi is NULL,\nso unable to get extensions for this gl driver\n");
+		}
+	} 
+	else {
+
+		// printf("glGetString(GL_VERSION) supported\n");
+
+		//
+		// glGetString supported
+		//
+		// Code adapted from : ftp://ftp.sgi.com/opengl/contrib/blythe/advanced99/notes/node395.html
+		//
+
+		// It takes a bit of care to be fool-proof about parsing the
+		// OpenGL extensions string.  Don't be fooled by sub-strings, etc.
+		start = extensionsstr;
+		for (;;) {
+			where = (char *)strstr((const char *)start, extension);
+			if (!where)
+				break;
+			terminator = where + strlen(extension);
+		    if (where == start || *(where - 1) == ' ') {
+				if (*terminator == ' ' || *terminator == '\0') {
+					*terminator = '\0';
+					// printf("Extension %s found\n", where);
+					return true;
+				}
+			}
+			start = terminator;
+		}
+	}
+
+	return false;
+
+}
+*/

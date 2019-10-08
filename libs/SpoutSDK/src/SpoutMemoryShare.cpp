@@ -5,9 +5,6 @@
 	Spout memory map management for sharing images via shared memory
 	Revised over original single reader/writer pair
 
-
-	LJ - leadedge@adam.com.au
-
 	Thanks and credit to Malcolm Bechard for the SpoutSharedMemory class
 
 	https://github.com/mbechard	
@@ -16,8 +13,9 @@
 	21.08.15 - started class file
 	25.09.15 - set sendermem object pointer to NULL in constructor
 	11.10.15 - introduced global width and height and GetSenderMemorySize function
-
+	29.02.16 - cleanup
 	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 	Copyright (c) 2014-2016, Lynn Jarvis. All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without modification, 
@@ -74,14 +72,11 @@ bool spoutMemoryShare::CreateSenderMemory(const char *sendername, unsigned int w
 	if(senderMem) delete senderMem;
 	senderMem = new SpoutSharedMemory();
 
-	// printf("CreateSenderMemory (%s, %d)\n", namestring.c_str(), width*height*4);
-
 	// Create a shared memory map for this sender
 	// Allocate enough width*height*4 - RGBA image
 	SpoutCreateResult result = senderMem->Create(namestring.c_str(), width*height*4 );
 
 	if(result == SPOUT_CREATE_FAILED) {
-		// printf("CreateSenderMemory : failed\n");
 		delete senderMem;
 		senderMem = NULL;
 		m_Width = 0;
@@ -115,7 +110,6 @@ bool spoutMemoryShare::UpdateSenderMemorySize(const char *sendername, unsigned i
 
 	SpoutCreateResult result = senderMem->Create(namestring.c_str(), width*height*4 );
 	if(result == SPOUT_CREATE_FAILED) {
-		// printf("UpdateSenderMemory failed\n");
 		delete senderMem;
 		senderMem = NULL;
 		m_Width = 0;
@@ -142,29 +136,15 @@ bool spoutMemoryShare::OpenSenderMemory(const char *sendername)
 	namestring += "_map";
 
 	// Create a new shared memory class object for this receiver
-	// if(senderMem) delete senderMem;
-	// senderMem = new SpoutSharedMemory();
-	// LJ DEBUG
 	if(!senderMem) senderMem = new SpoutSharedMemory();
 
-	// printf("OpenSenderMemory (%s, %x)\n", namestring.c_str(), senderMem);
-
 	if(!senderMem->Open(namestring.c_str()) ) {
-		// printf("OpenSenderMemory : failed\n");
-		// printf("OpenSenderMemory (%s) failed\n", namestring.c_str());
-		// LJ DEBUG
-		// delete senderMem;
-		// senderMem = NULL;
 		return false;
 	}
-
-	// printf("OpenSenderMemory (%s) OK\n", namestring.c_str());
 
 	// TODO : Set the global width and height - how ?
 	// m_Width = width;
 	// m_Height = height;
-
-	// printf("OpenSenderMemory - senderMem [%x]\n", senderMem);
 
 	return true;
 		
@@ -213,8 +193,8 @@ unsigned char * spoutMemoryShare::LockSenderMemory()
 
 	char *pBuf = senderMem->Lock();
 	if (!pBuf) {
-		senderMem->Unlock();
-		// printf("spoutMemoryShare::LockSenderMemory - error 1\n");
+		// https://github.com/leadedge/Spout2/issues/15
+		// senderMem->Unlock();
 		return NULL;
 	}
 
@@ -228,5 +208,4 @@ void spoutMemoryShare::UnlockSenderMemory()
 
 	senderMem->Unlock();
 }
-
 

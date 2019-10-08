@@ -94,12 +94,8 @@ SpoutCreateResult SpoutSharedMemory::Create(const char* name, int size)
 	bool alreadyExists = false;
 	if (err == ERROR_ALREADY_EXISTS) {
 		alreadyExists = true;
-		// We should ensure the already existing mapping is at least the size we expect
-		// But, GetFileSizeEx and GetFileSize do not work because they need a file handle
-		
 		// The size of the map will be the same as when it was created.
 		// 2.004 apps will have created a 10 sender map which will not be increased in size thereafter.
-
 	}
 	else {
 		if(err != 0) printf("SpoutSharedMemory::Create - Error = %ld (0x%x)\n", err, err);
@@ -148,18 +144,8 @@ bool SpoutSharedMemory::Open(const char* name)
 		return false;
 	}
 
-
-	// LJ - 22.10.15 - removed because it is not used
-	/*
-	DWORD err = GetLastError();
-	if (err == ERROR_ALREADY_EXISTS) {
-		// We should ensure the already existing mapping is at least
-		// the size we expect
-	}
-	*/
 	m_pBuffer = (char*)MapViewOfFile(m_hMap, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 	if (!m_pBuffer)	{
-		if(m_pName && strstr(m_pName, "_map")) printf("Open 3\n");
 		Close();
 		return false;
 	}
@@ -170,7 +156,6 @@ bool SpoutSharedMemory::Open(const char* name)
 
 	m_hMutex = CreateMutexA(NULL, FALSE, mutexName.c_str());
 	if (!m_hMutex) {
-		if(m_pName && strstr(m_pName, "_map")) printf("Open 4\n");
 		Close();
 		return false;
 	}
@@ -213,30 +198,25 @@ char* SpoutSharedMemory::Lock()
 	assert(m_hMutex);
 
 	if(m_lockCount < 0) {
-		// printf("Lockcount < 0\n");
 		return NULL;
 	}
 
 	if(!m_hMutex) {
-		// printf("Lock - m_hMutex is NULL\n");
 		return NULL;
 	}
 
 	if(!m_pBuffer) {
-		// printf("Lock - m_pBuffer is NULL\n");
 		return NULL;
 	}
 
 	if (m_lockCount > 0) {
 		assert(m_pBuffer);
 		m_lockCount++;
-		// printf("Lock - m_pBuffer = %x\n", m_pBuffer);
 		return m_pBuffer;
 	}
 
 	DWORD waitResult = WaitForSingleObject(m_hMutex, 67);
 	if (waitResult != WAIT_OBJECT_0) {
-		// printf("Lock - mutex wait failed\n");
 		return NULL;
 	}
 
