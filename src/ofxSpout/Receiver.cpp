@@ -23,15 +23,10 @@ namespace ofxSpout {
 		try {
 			this->spoutReceiver = new SpoutReceiver();
 			//name provided, so let's use it
-			char mutableName[256];
-			strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
-			unsigned int mutableWidth, mutableHeight;
-			if (!this->spoutReceiver->CreateReceiver(mutableName, mutableWidth, mutableHeight, channelName.empty())) {
-				throw("Can't create receiver");
+			if (!channelName.empty()) {
+				this->channelName = channelName;
+				this->spoutReceiver->SetReceiverName(channelName.c_str());
 			}
-			this->channelName = std::string(mutableName);
-			this->width = mutableWidth;
-			this->height = mutableHeight;
 			return true;
 		}
 		catch (const char * e) {
@@ -75,22 +70,19 @@ namespace ofxSpout {
 			strcpy_s(mutableName, this->channelName.size() + 1, this->channelName.c_str());
 
 			//check if the texture is allocated correctly, if not, allocate it
-			if (texture.getWidth() != this->width || texture.getHeight() != this->height) {
-				int format = texture.isAllocated() ? texture.getTextureData().glInternalFormat : this->defaultFormat;
-				texture.allocate(width, height, format);
+			if (this->spoutReceiver->IsUpdated()) {
+				this->channelName = this->spoutReceiver->GetSenderName();
+				this->width = this->spoutReceiver->GetSenderWidth();
+				this->height = this->spoutReceiver->GetSenderHeight();
+				texture.allocate(this->width, this->height, GL_RGBA);
 			}
 
 			//pull data into the texture (keep any existing fbo attachments)
 			GLint drawFboId = 0;
 			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-			if (!this->spoutReceiver->ReceiveTexture(mutableName, mutableWidth, mutableHeight, texture.getTextureData().textureID, texture.getTextureData().textureTarget, false, drawFboId)) {
+			if (!this->spoutReceiver->ReceiveTextureData(texture.getTextureData().textureID, texture.getTextureData().textureTarget, drawFboId)) {
 				throw("Can't receive texture");
 			}
-
-			//update our local settings incase anything changed
-			this->channelName = mutableName;
-			this->width = mutableWidth;
-			this->height = mutableHeight;
 
 			return true;
 		}
@@ -106,7 +98,7 @@ namespace ofxSpout {
 			if (!this->isInitialized()) {
 				throw("Not initialized");
 			}
-			this->spoutReceiver->SelectSenderPanel();
+			this->spoutReceiver->SelectSender();
 			return true;
 		}
 		catch (const char * e) {
