@@ -25,7 +25,6 @@ namespace ofxSpout {
 		std::string channelName;
 
 		SpoutSender * spoutSender;
-		int width, height;
 		int glFormat;
 	};
 }

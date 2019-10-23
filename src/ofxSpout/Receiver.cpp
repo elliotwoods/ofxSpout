@@ -7,8 +7,6 @@ namespace ofxSpout {
 	Receiver::Receiver() :
 		defaultFormat(GL_RGBA) {
 		this->spoutReceiver = nullptr;
-		this->width = 0;
-		this->height = 0;
 	}
 
 	//----------
@@ -24,7 +22,6 @@ namespace ofxSpout {
 			this->spoutReceiver = new SpoutReceiver();
 			//name provided, so let's use it
 			if (!channelName.empty()) {
-				this->channelName = channelName;
 				this->spoutReceiver->SetReceiverName(channelName.c_str());
 			}
 			return true;
@@ -41,8 +38,6 @@ namespace ofxSpout {
 			this->spoutReceiver->ReleaseReceiver();
 			delete this->spoutReceiver;
 			this->spoutReceiver = nullptr;
-			this->width = 0;
-			this->height = 0;
 		}
 	}
 
@@ -64,17 +59,9 @@ namespace ofxSpout {
 				throw("Not initialized");
 			}
 
-			//prepare the channel name, allow it to be changed if different channels are available
-			char mutableName[256];
-			unsigned int mutableWidth, mutableHeight;
-			strcpy_s(mutableName, this->channelName.size() + 1, this->channelName.c_str());
-
 			//check if the texture is allocated correctly, if not, allocate it
 			if (this->spoutReceiver->IsUpdated()) {
-				this->channelName = this->spoutReceiver->GetSenderName();
-				this->width = this->spoutReceiver->GetSenderWidth();
-				this->height = this->spoutReceiver->GetSenderHeight();
-				texture.allocate(this->width, this->height, GL_RGBA);
+				texture.allocate(this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight(), GL_RGBA);
 			}
 
 			//pull data into the texture (keep any existing fbo attachments)
@@ -109,16 +96,25 @@ namespace ofxSpout {
 	
 	//-----------
 	std::string Receiver::getChannelName() const {
-		return this->channelName;
+		if (this->isInitialized()) {
+			return this->spoutReceiver->GetSenderName();
+		}
+		return "";
 	}
 
 	//----------
 	float Receiver::getWidth() const {
-		return this->width;
+		if (this->isInitialized()) {
+			return this->spoutReceiver->GetSenderWidth();
+		}
+		return 0;
 	}
 
 	//----------
 	float Receiver::getHeight() const {
-		return this->height;
+		if (this->isInitialized()) {
+			return this->spoutReceiver->GetSenderHeight();
+		}
+		return 0;
 	}
 }

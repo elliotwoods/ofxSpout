@@ -22,12 +22,10 @@ namespace ofxSpout {
 		std::string getChannelName() const;
 		float getWidth() const;
 		float getHeight() const;
-	protected:
-		std::string channelName;
 
+	protected:
 		SpoutReceiver * spoutReceiver;
-		int width;
-		int height;
+
 		const int defaultFormat; // = GL_RGBA. If you're using anything else then make sure to allocate your texture manually
 	};
 }
