@@ -4,15 +4,11 @@
 Implementation of [Spout v2](http://spout.zeal.co/) for sharing textures between applications (including DX and GL).
 
 Tested with:
-* openFrameworks 0.9.0 at 3d2c9f2d25c4401274b70e5f68251fd459d8a894
-* Visual Studio 2015
+* openFrameworks 0.10.1 at a1deaf147bf0f9bbd2282db880afd23fd4cb7a7f
+* Visual Studio 2017
 * 32bit and 64bit
-* Windows 8.1
-* Spout v2.004
-
-Requirements:
-
-* http://github.com/elliotwoods/ofxAddonLib
+* Windows 10
+* Spout v2.007
 
 # Usage
 
@@ -54,9 +50,3 @@ void ofApp::update() {
 	receiver.receive(myTexture);
 }
 ```
-
-# Notes
-
-## Windows Vista
-
-Due to the deprecated `GetVersion` function, I've hardcoded a `true` at https://github.com/elliotwoods/ofxSpout/blob/master/libs/SpoutSDK/src/SpoutDirectX.cpp#L540. If you are running on a version of windows which doesn't have DX11 (i.e. Vista or earlier), then you can either uncomment the function or change the literal to be `false`.
