@@ -37,7 +37,7 @@ namespace ofxSpout {
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Sender::init") << e;
+			ofLogError(__FUNCTION__) << e;
 			this->release();
 			return false;
 		}
@@ -66,7 +66,7 @@ namespace ofxSpout {
 	//----------
 	bool Sender::send(const ofTexture & texture) {
 		if (!this->isInitialized()) {
-			ofLogError("ofxSpout::Sender::send") << "Sender not initialised";
+			ofLogError(__FUNCTION__) << "Sender not initialised";
 			return false;
 		}
 
@@ -84,7 +84,7 @@ namespace ofxSpout {
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Sender::send") << e;
+			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
@@ -106,7 +106,7 @@ namespace ofxSpout {
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Sender::setVerticalSync") << e;
+			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
@@ -120,7 +120,7 @@ namespace ofxSpout {
 			return this->spoutSender->GetVerticalSync();
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Sender::getVerticalSync") << e;
+			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}

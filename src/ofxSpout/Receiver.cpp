@@ -24,10 +24,11 @@ namespace ofxSpout {
 			if (!channelName.empty()) {
 				this->spoutReceiver->SetReceiverName(channelName.c_str());
 			}
+
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Sender::init") << "Channel : " << channelName << " : " << e;
+			ofLogError(__FUNCTION__) << "Channel : " << channelName << " : " << e;
 			return false;
 		}
 	}
@@ -74,7 +75,7 @@ namespace ofxSpout {
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Receiver::receive") << e;
+			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
@@ -89,7 +90,7 @@ namespace ofxSpout {
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Receiver::selectSenderPanel") << e;
+			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
