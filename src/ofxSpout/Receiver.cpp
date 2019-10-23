@@ -7,8 +7,6 @@ namespace ofxSpout {
 	Receiver::Receiver() :
 		defaultFormat(GL_RGBA) {
 		this->spoutReceiver = nullptr;
-		this->width = 0;
-		this->height = 0;
 	}
 
 	//----------
@@ -17,25 +15,20 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Receiver::init(string channelName) {
+	bool Receiver::init(std::string channelName) {
 		this->release();
 
 		try {
 			this->spoutReceiver = new SpoutReceiver();
 			//name provided, so let's use it
-			char mutableName[256];
-			strcpy_s(mutableName, channelName.size() + 1, channelName.c_str());
-			unsigned int mutableWidth, mutableHeight;
-			if (!this->spoutReceiver->CreateReceiver(mutableName, mutableWidth, mutableHeight, channelName.empty())) {
-				throw("Can't create receiver");
+			if (!channelName.empty()) {
+				this->spoutReceiver->SetReceiverName(channelName.c_str());
 			}
-			this->channelName = string(mutableName);
-			this->width = mutableWidth;
-			this->height = mutableHeight;
+
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Sender::init") << "Channel : " << channelName << " : " << e;
+			ofLogError(__FUNCTION__) << "Channel : " << channelName << " : " << e;
 			return false;
 		}
 	}
@@ -46,8 +39,6 @@ namespace ofxSpout {
 			this->spoutReceiver->ReleaseReceiver();
 			delete this->spoutReceiver;
 			this->spoutReceiver = nullptr;
-			this->width = 0;
-			this->height = 0;
 		}
 	}
 
@@ -69,33 +60,22 @@ namespace ofxSpout {
 				throw("Not initialized");
 			}
 
-			//prepare the channel name, allow it to be changed if different channels are available
-			char mutableName[256];
-			unsigned int mutableWidth, mutableHeight;
-			strcpy_s(mutableName, this->channelName.size() + 1, this->channelName.c_str());
-
 			//check if the texture is allocated correctly, if not, allocate it
-			if (texture.getWidth() != this->width || texture.getHeight() != this->height) {
-				int format = texture.isAllocated() ? texture.getTextureData().glInternalFormat : this->defaultFormat;
-				texture.allocate(width, height, format);
+			if (this->spoutReceiver->IsUpdated()) {
+				texture.allocate(this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight(), GL_RGBA);
 			}
 
 			//pull data into the texture (keep any existing fbo attachments)
 			GLint drawFboId = 0;
 			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-			if (!this->spoutReceiver->ReceiveTexture(mutableName, mutableWidth, mutableHeight, texture.getTextureData().textureID, texture.getTextureData().textureTarget, false, drawFboId)) {
+			if (!this->spoutReceiver->ReceiveTextureData(texture.getTextureData().textureID, texture.getTextureData().textureTarget, drawFboId)) {
 				throw("Can't receive texture");
 			}
-
-			//update our local settings incase anything changed
-			this->channelName = mutableName;
-			this->width = mutableWidth;
-			this->height = mutableHeight;
 
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Receiver::receive") << e;
+			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
@@ -106,27 +86,36 @@ namespace ofxSpout {
 			if (!this->isInitialized()) {
 				throw("Not initialized");
 			}
-			this->spoutReceiver->SelectSenderPanel();
+			this->spoutReceiver->SelectSender();
 			return true;
 		}
 		catch (const char * e) {
-			ofLogError("ofxSpout::Receiver::selectSenderPanel") << e;
+			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
 	
 	//-----------
-	string Receiver::getChannelName() const {
-		return this->channelName;
+	std::string Receiver::getChannelName() const {
+		if (this->isInitialized()) {
+			return this->spoutReceiver->GetSenderName();
+		}
+		return "";
 	}
 
 	//----------
 	float Receiver::getWidth() const {
-		return this->width;
+		if (this->isInitialized()) {
+			return this->spoutReceiver->GetSenderWidth();
+		}
+		return 0;
 	}
 
 	//----------
 	float Receiver::getHeight() const {
-		return this->height;
+		if (this->isInitialized()) {
+			return this->spoutReceiver->GetSenderHeight();
+		}
+		return 0;
 	}
 }

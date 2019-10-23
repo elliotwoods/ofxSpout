@@ -2,7 +2,7 @@
 //
 //			spoutDirectX.cpp
 //
-//		DirectX functions to manage DirectX 11 texture sharing
+//		DirectX functions to manage DirectX9 and DirectX11 texture sharing
 //
 // ====================================================================================
 //		Revisions :
@@ -26,15 +26,31 @@
 //		19.11.15	- fixed return value in CreateDX9device after caps error (was false instead of NULL)
 //		20.11.15	- Registry read/write moved from SpoutGLDXinterop class
 //		16.02.16	- IDXGIFactory release - from https://github.com/jossgray/Spout2
+//		29.02.16	- cleanup
+//		05.04.16	- removed unused texture pointer from mutex access functions
+//		16.06.16	- fixed null device release in SetAdapter - https://github.com/leadedge/Spout2/issues/17
+//		01.07.16	- restored hFocusWindow in CreateDX9device (was set to NULL for testing)
+//		04.09.16	- Add create DX11 staging texture
+//		16.01.17	- Add WriteDX9surface
+//		23.01.17	- pEventQuery->Release() for writeDX9surface
+//		02.06.17	- Registry functions moved to SpoutUtils
+//					- Added Spout error log console output
+//		17.03.18	- More error log notices
+//					- protect against an adapter with no outputs for SetAdapter
+//		16.06.18	- change all class variable name prefix from g_ to m_
+//					  Add GetImmediateContext();
+//					- Add ReleaseDX11Texture and ReleaseDX11Device
+//		13.11.18	- Remove staging texture functons
+//		16.12.18	- Move FlushWait from interop class
+//		03.01.19	- Changed to revised registry functions in SpoutUtils
 //
-
 // ====================================================================================
 /*
 
-		Copyright (c) 2014-2016. Lynn Jarvis. All rights reserved.
+	Copyright (c) 2014-2019. Lynn Jarvis. All rights reserved.
 
-		Redistribution and use in source and binary forms, with or without modification, 
-		are permitted provided that the following conditions are met:
+	Redistribution and use in source and binary forms, with or without modification, 
+	are permitted provided that the following conditions are met:
 
 		1. Redistributions of source code must retain the above copyright notice, 
 		   this list of conditions and the following disclaimer.
@@ -43,15 +59,15 @@
 		   this list of conditions and the following disclaimer in the documentation 
 		   and/or other materials provided with the distribution.
 
-		THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"	AND ANY 
-		EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-		OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE	ARE DISCLAIMED. 
-		IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-		INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-		PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-		INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-		LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-		OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"	AND ANY 
+	EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
+	OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE	ARE DISCLAIMED. 
+	IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+	INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+	PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+	INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+	LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
@@ -60,19 +76,14 @@
 spoutDirectX::spoutDirectX() {
 
 	// DX11
-	g_pImmediateContext = NULL;
-	g_driverType		= D3D_DRIVER_TYPE_NULL;
-	g_featureLevel		= D3D_FEATURE_LEVEL_11_0;
-
-	// For debugging only - to toggle texture access locks disable/enable
-	bUseAccessLocks     = true; // use texture access locks by default
+	m_pImmediateContext = NULL;
+	m_driverType		= D3D_DRIVER_TYPE_NULL;
+	m_featureLevel		= D3D_FEATURE_LEVEL_11_0;
 
 	// Output graphics adapter
 	// Programmer can set for an application
-	g_AdapterIndex  = D3DADAPTER_DEFAULT; // DX9
-	g_pAdapterDX11  = nullptr; // DX11
-
-
+	m_AdapterIndex  = D3DADAPTER_DEFAULT; // DX9
+	m_pAdapterDX11  = nullptr; // DX11
 }
 
 spoutDirectX::~spoutDirectX() {
@@ -86,10 +97,9 @@ spoutDirectX::~spoutDirectX() {
 // Create a DX9 object
 IDirect3D9Ex* spoutDirectX::CreateDX9object()
 {
-	HRESULT res;
 	IDirect3D9Ex* pD3D;
-    
-	res = Direct3DCreate9Ex(D3D_SDK_VERSION, &pD3D);
+
+	HRESULT res = Direct3DCreate9Ex(D3D_SDK_VERSION, &pD3D);
 	if ( res != D3D_OK ) return NULL;
 
 	return pD3D;
@@ -98,14 +108,12 @@ IDirect3D9Ex* spoutDirectX::CreateDX9object()
 // Create a DX9 device
 IDirect3DDevice9Ex* spoutDirectX::CreateDX9device(IDirect3D9Ex* pD3D, HWND hWnd)
 {
-	HRESULT res;
 	IDirect3DDevice9Ex* pDevice;
     D3DPRESENT_PARAMETERS d3dpp;
 	D3DCAPS9 d3dCaps;
-	// int AdapterIndex = 0; // DEBUG disable temp
-	int AdapterIndex = g_AdapterIndex;
+	int AdapterIndex = m_AdapterIndex;
 
-	// printf("CreateDX9device : g_AdapterIndex = %d\n", g_AdapterIndex);
+	SpoutLogNotice("spoutDirectX::CreateDX9device - adapter = %d, hWnd = 0x%x", AdapterIndex, hWnd);
 
     ZeroMemory(&d3dpp, sizeof(d3dpp));
     d3dpp.Windowed		= TRUE;						// windowed and not full screen
@@ -127,7 +135,7 @@ IDirect3DDevice9Ex* spoutDirectX::CreateDX9device(IDirect3D9Ex* pD3D, HWND hWnd)
 	// Test for hardware vertex processing capability and set up as needed
 	// D3DCREATE_MULTITHREADED required by interop spec
 	if(pD3D->GetDeviceCaps( AdapterIndex, D3DDEVTYPE_HAL, &d3dCaps) != S_OK ) {
-		printf("spoutDirectX::CreateDX9device - GetDeviceCaps error\n");
+		SpoutLogFatal("spoutDirectX::CreateDX9device - GetDeviceCaps error");
 		return NULL;
 	}
 
@@ -142,7 +150,7 @@ IDirect3DDevice9Ex* spoutDirectX::CreateDX9device(IDirect3D9Ex* pD3D, HWND hWnd)
 	// LJ notes - hwnd seems to have no effect - maybe because we do not render anything.
 	// Note here that we are setting up for Windowed mode but it seems not to be affected
 	// by fullscreen, probably because we are not rendering to it.
-    res = pD3D->CreateDeviceEx(	AdapterIndex, // D3DADAPTER_DEFAULT
+	HRESULT res = pD3D->CreateDeviceEx(	AdapterIndex,   // D3DADAPTER_DEFAULT
 								D3DDEVTYPE_HAL, // Hardware rasterization. 
 								hWnd,			// hFocusWindow (can be NULL)
 								dwBehaviorFlags,
@@ -151,11 +159,9 @@ IDirect3DDevice9Ex* spoutDirectX::CreateDX9device(IDirect3D9Ex* pD3D, HWND hWnd)
 								&pDevice);
 	
 	if ( res != D3D_OK ) {
-		printf("spoutDirectX::CreateDX9device - CreateDeviceEx returned error %d (%x)\n", res, res);
+		SpoutLogFatal("spoutDirectX::CreateDX9device - CreateDeviceEx returned error %d (%x)", res, res);
 		return NULL;
 	}
-
-	// printf("spoutDirectX::CreateDX9device - pDevice = %d (%x)\n", pDevice, pDevice);
 
 	return pDevice;
 
@@ -169,8 +175,8 @@ IDirect3DDevice9Ex* spoutDirectX::CreateDX9device(IDirect3D9Ex* pD3D, HWND hWnd)
 bool spoutDirectX::CreateSharedDX9Texture(IDirect3DDevice9Ex* pDevice, unsigned int width, unsigned int height, D3DFORMAT format, LPDIRECT3DTEXTURE9 &dxTexture, HANDLE &dxShareHandle)
 {
 
+	SpoutLogNotice("spoutDirectX::CreateSharedDX9Texture(pDevice = 0x%Ix, width = %d, height = %d, format = %d", (intptr_t)pDevice, width, height, format);
 
-	// DEBUG
 	if(dxTexture != NULL) dxTexture->Release();
 
 	HRESULT res = pDevice->CreateTexture(width,
@@ -185,21 +191,23 @@ bool spoutDirectX::CreateSharedDX9Texture(IDirect3DDevice9Ex* pDevice, unsigned 
 	// USAGE may also be D3DUSAGE_DYNAMIC and pay attention to format and resolution!!!
 	// USAGE, format and size for sender and receiver must all match
 	if ( res != D3D_OK ) {
-		printf("DX9 CreateTexture error : ");
+		char tmp[256];
+		sprintf_s(tmp, 256, "spoutDirectX::CreateSharedDX9Texture error - ");
 		switch (res) {
 			case D3DERR_INVALIDCALL:
-				printf("    D3DERR_INVALIDCALL \n");
+				strcat_s(tmp, 256, "D3DERR_INVALIDCALL");
 				break;
 			case D3DERR_OUTOFVIDEOMEMORY:
-				printf("    D3DERR_OUTOFVIDEOMEMORY \n");
+				strcat_s(tmp, 256, "D3DERR_OUTOFVIDEOMEMORY");
 				break;
 			case E_OUTOFMEMORY:
-				printf("    E_OUTOFMEMORY \n");
+				strcat_s(tmp, 256, "E_OUTOFMEMORY");
 				break;
 			default :
-				printf("    Unknown error\n");
+				strcat_s(tmp, 256, "Unknown error");
 				break;
 		}
+		SpoutLogFatal("%s", tmp);
 		return false;
 	}
 
@@ -208,47 +216,38 @@ bool spoutDirectX::CreateSharedDX9Texture(IDirect3DDevice9Ex* pDevice, unsigned 
 } // end CreateSharedDX9Texture
 
 
-/*
-// LJ DEBUG : TODO
-bool spoutDirectX::ReadSharedDX9texture(IDirect3DDevice9Ex* pDevice, LPDIRECT3DTEXTURE9 &dxTexture, HANDLE &dxShareHandle, unsigned char *pixels, unsigned int width, unsigned int height)
+bool spoutDirectX::WriteDX9surface(IDirect3DDevice9Ex* pDevice, LPDIRECT3DTEXTURE9 dxTexture, LPDIRECT3DSURFACE9 source_surface)
 {
-	if(dxTexture == NULL) return false;
-
-	// Copy DX9 texture to pixels
-	HRESULT res = pDevice->CreateTexture(width,
-										 height,
-										 1,
-										 D3DUSAGE_RENDERTARGET, 
-										 D3DFMT_A8R8G8B8,
-										 D3DPOOL_DEFAULT,	// Required by interop spec
-										 &dxTexture,
-										 &dxShareHandle);	// local share handle to allow type casting for 64bit
+	IDirect3DSurface9* texture_surface = NULL;
+	IDirect3DQuery9* pEventQuery=NULL;
 	
-	if ( res != D3D_OK ) {
-		printf("DX9 ReadSharedDX9texture error : ");
-		switch (res) {
-			case D3DERR_INVALIDCALL:
-				printf("    D3DERR_INVALIDCALL \n");
-				break;
-			case D3DERR_OUTOFVIDEOMEMORY:
-				printf("    D3DERR_OUTOFVIDEOMEMORY \n");
-				break;
-			case E_OUTOFMEMORY:
-				printf("    E_OUTOFMEMORY \n");
-				break;
-			default :
-				printf("    Unknown error\n");
-				break;
+	HRESULT hr = dxTexture->GetSurfaceLevel(0, &texture_surface); // shared texture surface
+	if(SUCCEEDED(hr)) {
+		// UpdateSurface
+		// https://msdn.microsoft.com/en-us/library/windows/desktop/bb205857%28v=vs.85%29.aspx
+		//    The source surface must have been created with D3DPOOL_SYSTEMMEM.
+		//    The destination surface must have been created with D3DPOOL_DEFAULT.
+		//    Neither surface can be locked or holding an outstanding device context.
+		hr = pDevice->UpdateSurface(source_surface, NULL, texture_surface, NULL);
+		if(SUCCEEDED(hr)) {
+			// It is necessary to flush the command queue 
+			// or the data is not ready for the receiver to read.
+			// Adapted from : https://msdn.microsoft.com/en-us/library/windows/desktop/bb172234%28v=vs.85%29.aspx
+			// Also see : http://www.ogre3d.org/forums/viewtopic.php?f=5&t=50486
+			pDevice->CreateQuery(D3DQUERYTYPE_EVENT, &pEventQuery) ;
+			if(pEventQuery!=NULL) {
+				pEventQuery->Issue(D3DISSUE_END) ;
+				while(S_FALSE == pEventQuery->GetData(NULL, 0, D3DGETDATA_FLUSH)) ;
+				pEventQuery->Release(); // Must be released or causes a leak and reference count increment
+			}
+			return true;
 		}
-		return false;
 	}
 
-	printf("DX9 ReadSharedDX9texture OK ");
+	SpoutLogError("spoutDirectX::WriteDX9surface(0x%Ix, 0x%x, 0x%x) failed", (intptr_t)pDevice, dxTexture, source_surface);
 
-	return true;
-
-} // end CopyDX9Texture
-*/
+	return false;
+} // end WriteDX9surface
 
 // =========================== end DX9 =============================
 
@@ -261,11 +260,11 @@ bool spoutDirectX::ReadSharedDX9texture(IDirect3DDevice9Ex* pDevice, LPDIRECT3DT
 // Notes for DX11 : https://www.opengl.org/registry/specs/NV/DX_interop2.txt
 //
 // Valid device types for the <dxDevice> parameter of wglDXOpenDeviceNV and associated restrictions
-// DirectX device type : ID3D11Device - can only be used on WDDM operating systems; XXX Must be multithreaded
+// DirectX device type ID3D11Device - can only be used on WDDM operating systems; XXX Must be multithreaded
 // TEXTURE_2D - ID3D11Texture2D - Usage flags must be D3D11_USAGE_DEFAULT
-// wglDXSetResourceShareHandle does not need to be called for DirectX
-// version 10 and 11 resources. Calling this function for DirectX 10
-// and 11 resources is not an error but has no effect.
+// wglDXSetResourceShareHandle does not need to be called for DirectX version
+// 10 and 11 resources. Calling this function for DirectX 10 and 11 resources
+// is not an error but has no effect.
 
 // Create DX11 device
 ID3D11Device* spoutDirectX::CreateDX11device()
@@ -273,10 +272,14 @@ ID3D11Device* spoutDirectX::CreateDX11device()
 	ID3D11Device* pd3dDevice = NULL;
 	HRESULT hr = S_OK;
 	UINT createDeviceFlags = 0;
-	// IDXGIAdapter* pAdapterDX11 = nullptr; // DEBUG temp disable
-	IDXGIAdapter* pAdapterDX11 = g_pAdapterDX11;
+	IDXGIAdapter* pAdapterDX11 = m_pAdapterDX11;
 
-	// printf("CreateDX11device : g_AdapterIndex = %d, pAdapterDX11 = [%x]\n", g_AdapterIndex, g_pAdapterDX11);
+	SpoutLogNotice("spoutDirectX::CreateDX11device - pAdapterDX11 (%d)", m_pAdapterDX11);
+
+#if defined(_DEBUG)
+	// If the project is in a debug build, enable debugging via SDK Layers with this flag.
+	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
 	// GL/DX interop Spec
 	// ID3D11Device can only be used on WDDM operating systems : Must be multithreaded
@@ -289,7 +292,13 @@ ID3D11Device* spoutDirectX::CreateDX11device()
 
 	UINT numDriverTypes = ARRAYSIZE( driverTypes );
 
+	// These are the feature levels that we will accept.
+	// m_featureLevel is the feature level used
+	// 11.0 = 0xb000
+	// 11.1 = 0xb001
+	// TODO - check for 11.1 and multiple passes if feature level fails
 	D3D_FEATURE_LEVEL featureLevels[] =	{
+		// D3D_FEATURE_LEVEL_11_1,
 		D3D_FEATURE_LEVEL_11_0,
 		D3D_FEATURE_LEVEL_10_1,
 		D3D_FEATURE_LEVEL_10_0,
@@ -297,9 +306,8 @@ ID3D11Device* spoutDirectX::CreateDX11device()
 
 	UINT numFeatureLevels = ARRAYSIZE( featureLevels );
 
-	// To allow for multiple graphics cards we will use g_pAdapterDX11
+	// To allow for multiple graphics cards we will use m_pAdapterDX11
 	// Which is set by SetAdapter before initializing DirectX
-	// printf("CreateDX11device : pAdapterDX11 = %x\n", pAdapterDX11);
 
 	if(pAdapterDX11) {
 			hr = D3D11CreateDevice( pAdapterDX11,
@@ -310,23 +318,32 @@ ID3D11Device* spoutDirectX::CreateDX11device()
 									numFeatureLevels,
 									D3D11_SDK_VERSION,
 									&pd3dDevice,
-									&g_featureLevel,
-									&g_pImmediateContext );
+									&m_featureLevel,
+									&m_pImmediateContext );
 	} // endif adapter set
 	else {
+		
+		// Possible Optimus problem : is the default adapter (NULL) always Intel ?
+		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476082%28v=vs.85%29.aspx
+		// pAdapter : a pointer to the video adapter to use when creating a device. 
+		// Pass NULL to use the default adapter, which is the first adapter that is
+		// enumerated by IDXGIFactory1::EnumAdapters. 
+		// http://www.gamedev.net/topic/645920-d3d11createdevice-returns-wrong-feature-level/
+
 		for( UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++ ) {
-			g_driverType = driverTypes[driverTypeIndex];
+
+			m_driverType = driverTypes[driverTypeIndex];
 
 			hr = D3D11CreateDevice(	NULL,
-									g_driverType,
+									m_driverType,
 									NULL,
 									createDeviceFlags,
 									featureLevels,
 									numFeatureLevels,
 									D3D11_SDK_VERSION, 
 									&pd3dDevice,
-									&g_featureLevel,
-									&g_pImmediateContext);
+									&m_featureLevel,
+									&m_pImmediateContext);
 
 			// Break as soon as something passes
 			if(SUCCEEDED(hr))
@@ -335,10 +352,13 @@ ID3D11Device* spoutDirectX::CreateDX11device()
 	} // endif no adapter set
 	
 	// Quit if nothing worked
-	if( FAILED(hr))
+	if (FAILED(hr)) {
+		SpoutLogFatal("spoutDirectX::CreateDX11device NULL device");
 		return NULL;
+	}
 
 	// All OK
+
 	return pd3dDevice;
 
 } // end CreateDX11device
@@ -353,16 +373,19 @@ bool spoutDirectX::CreateSharedDX11Texture(ID3D11Device* pd3dDevice,
 {
 	ID3D11Texture2D* pTexture;
 	
-	if(pd3dDevice == NULL)
-		MessageBoxA(NULL, "CreateSharedDX11Texture NULL device", "SpoutSender", MB_OK);
+	if (pd3dDevice == NULL) {
+		SpoutLogFatal("spoutDirectX::CreateSharedDX11Texture NULL device");
+		return false; // 12.06.18
+	}
+
+	SpoutLogNotice("spoutDirectX::CreateSharedDX11Texture");
+	SpoutLogNotice("    pDevice = 0x%Ix, width = %d, height = %d, format = %d", (intptr_t)pd3dDevice, width, height, format);
 
 	//
 	// Create a new shared DX11 texture
 	//
 
 	pTexture = *pSharedTexture; // The texture pointer
-
-	// if(pTexture == NULL) MessageBoxA(NULL, "CreateSharedDX11Texture NULL texture", "SpoutSender", MB_OK);
 
 	// Textures being shared from D3D9 to D3D11 have the following restrictions (LJ - D3D11 to D3D9 ?).
 	//		Textures must be 2D
@@ -372,7 +395,7 @@ bool spoutDirectX::CreateSharedDX11Texture(ID3D11Device* pd3dDevice,
 	//		MSAA textures are not allowed
 	//		Bind flags must have SHADER_RESOURCE and RENDER_TARGET set
 	//		Only R10G10B10A2_UNORM, R16G16B16A16_FLOAT and R8G8B8A8_UNORM formats are allowed - ?? LJ ??
-	//		** If a shared texture is updated on one device ID3D11DeviceContext::Flush must be called on that device **
+	//		If a shared texture is updated on one device ID3D11DeviceContext::Flush must be called on that device **
 
 	// http://msdn.microsoft.com/en-us/library/windows/desktop/ff476903%28v=vs.85%29.aspx
 	// To share a resource between two Direct3D 11 devices the resource must have been created
@@ -385,7 +408,7 @@ bool spoutDirectX::CreateSharedDX11Texture(ID3D11Device* pd3dDevice,
 	desc.BindFlags			= D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	desc.MiscFlags			= D3D11_RESOURCE_MISC_SHARED; // This texture will be shared
 	// A DirectX 11 texture with D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX is not compatible with DirectX 9
-	// so a general named mutext is used for all texture types
+	// so a general named mutex is used for all texture types
 	desc.Format				= format;
 	desc.Usage				= D3D11_USAGE_DEFAULT;
 	// Multisampling quality and count
@@ -395,25 +418,27 @@ bool spoutDirectX::CreateSharedDX11Texture(ID3D11Device* pd3dDevice,
 	desc.MipLevels			= 1;
 	desc.ArraySize			= 1;
 
-	HRESULT res = pd3dDevice->CreateTexture2D(&desc, NULL, &pTexture); // pSharedTexture);
+	HRESULT res = pd3dDevice->CreateTexture2D(&desc, NULL, &pTexture);
 
 	if (res != S_OK) {
 		// http://msdn.microsoft.com/en-us/library/windows/desktop/ff476174%28v=vs.85%29.aspx
-		printf("CreateTexture2D ERROR : [0x%x]\n", res);
+		char tmp[256];
+		sprintf_s(tmp, 256, "spoutDirectX::CreateSharedDX11Texture ERROR - [0x%x] : ", res);
 		switch (res) {
 			case D3DERR_INVALIDCALL:
-				printf("    D3DERR_INVALIDCALL \n");
+				strcat_s(tmp, 256, "D3DERR_INVALIDCALL");
 				break;
 			case E_INVALIDARG:
-				printf("    E_INVALIDARG \n");
+				strcat_s(tmp, 256, "E_INVALIDARG");
 				break;
 			case E_OUTOFMEMORY:
-				printf("    E_OUTOFMEMORY \n");
+				strcat_s(tmp, 256, "E_OUTOFMEMORY");
 				break;
 			default :
-				printf("    Unlisted error\n");
+				strcat_s(tmp, 256, "Unlisted error");
 				break;
 		}
+		SpoutLogFatal("%s", tmp);
 		return false;
 	}
 
@@ -424,7 +449,7 @@ bool spoutDirectX::CreateSharedDX11Texture(ID3D11Device* pd3dDevice,
 	// interface and then calling GetSharedHandle.
 	IDXGIResource* pOtherResource(NULL);
 	if(pTexture->QueryInterface( __uuidof(IDXGIResource), (void**)&pOtherResource) != S_OK) {
-		printf("    QueryInterface error\n");
+		SpoutLogFatal("spoutDirectX::CreateSharedDX11Texture - QueryInterface error");
 		return false;
 	}
 
@@ -434,20 +459,23 @@ bool spoutDirectX::CreateSharedDX11Texture(ID3D11Device* pd3dDevice,
 
 	*pSharedTexture = pTexture;
 
+	SpoutLogNotice("    pTexture = 0x%Ix", pTexture);
+
 	return true;
 
 }
 
 bool spoutDirectX::OpenDX11shareHandle(ID3D11Device* pDevice, ID3D11Texture2D** ppSharedTexture, HANDLE dxShareHandle)
 {
-	HRESULT hr;
+	// SpoutLogNotice("spoutDirectX::OpenDX11shareHandle : device = 0x%Ix, sharedtexture = 0x%x, sharehandle = 0x%x", (intptr_t)pDevice, ppSharedTexture, dxShareHandle);
 
 	// To share a resource between a Direct3D 9 device and a Direct3D 11 device 
 	// the texture must have been created using the pSharedHandle argument of CreateTexture.
 	// The shared Direct3D 9 handle is then passed to OpenSharedResource in the hResource argument.
 	// printf("OpenDX11shareHandle - pDevice [%x] %x, %x\n", pDevice, dxShareHandle, ppSharedTexture);
-	hr = pDevice->OpenSharedResource(dxShareHandle, __uuidof(ID3D11Resource), (void**)(ppSharedTexture));
+	HRESULT hr = pDevice->OpenSharedResource(dxShareHandle, __uuidof(ID3D11Resource), (void**)(ppSharedTexture));
 	if(hr != S_OK) {
+		SpoutLogError("spoutDirectX::OpenDX11shareHandle failed");
 		return false;
 	}
 	
@@ -471,225 +499,11 @@ bool spoutDirectX::OpenDX11shareHandle(ID3D11Device* pDevice, ID3D11Texture2D** 
 
 }
 
-
-
-// =================================================================
-// Texture access mutex locks
-//
-// A general mutex lock for DirectX 9 and for DirectX11 textures
-//
-// =================================================================
-bool spoutDirectX::CreateAccessMutex(const char *name, HANDLE &hAccessMutex)
+// Get context
+ID3D11DeviceContext* spoutDirectX::GetImmediateContext()
 {
-	DWORD errnum;
-	char szMutexName[300]; // name of the mutex
-
-	// Create the mutex name to control access to the shared texture
-	sprintf_s((char*)szMutexName, 300, "%s_SpoutAccessMutex", name);
-
-	// Create or open mutex depending, on whether it already exists or not
-    hAccessMutex = CreateMutexA ( NULL,   // default security
-						  FALSE,  // No initial owner
-						  (LPCSTR)szMutexName);
-
-	if (hAccessMutex == NULL) {
-		printf("CreateAccessMutex : failed\n");
-        return false;
-	}
-	else {
-		errnum = GetLastError();
-		// printf("read event GetLastError() = %d\n", errnum);
-		if(errnum == ERROR_INVALID_HANDLE) {
-			printf("access mutex [%s] invalid handle\n", szMutexName);
-		}
-		if(errnum == ERROR_ALREADY_EXISTS) {
-			// printf("access mutex [%s] already exists\n", szMutexName);
-		}
-		else {
-			// printf("access mutex [%s] created\n", szMutexName);
-		}
-	}
-
-	return true;
-
+	return m_pImmediateContext;
 }
-
-void spoutDirectX::CloseAccessMutex(HANDLE &hAccessMutex)
-{
-	if(hAccessMutex) CloseHandle(hAccessMutex);
-	hAccessMutex = NULL; // makes sure the passed handle is set to NULL
-}
-
-
-//
-// Checks whether any other process is holding the lock and waits for access for 4 frames if so.
-// For receiving from Version 1 apps with no mutex lock, a reader will have created the mutex and
-// will have sole access and rely on the interop locks
-bool spoutDirectX::CheckAccess(HANDLE hAccessMutex, ID3D11Texture2D* pSharedTexture)
-{
-	DWORD dwWaitResult;
-
-	UNREFERENCED_PARAMETER(pSharedTexture);
-
-
-	// For debugging
-	if(!bUseAccessLocks) return true;
-
-	// General mutex lock
-	// DirectX 11 keyed mutex lock removed due to compatibility problems
-	// Don't block if no mutex for Spout1 apps
-	if(!hAccessMutex) {
-		// printf("No access mutex\n");
-		return true; 
-	}
-
-	dwWaitResult = WaitForSingleObject(hAccessMutex, 67); // 4 frames at 60fps
-	if (dwWaitResult == WAIT_OBJECT_0 ) {
-		// The state of the object is signalled.
-		return true;
-	}
-	else {
-		switch(dwWaitResult) {
-			case WAIT_ABANDONED : // Could return here
-				printf("CheckAccess : WAIT_ABANDONED\n");
-				break;
-			case WAIT_TIMEOUT : // The time-out interval elapsed, and the object's state is nonsignaled.
-				printf("CheckAccess : WAIT_TIMEOUT\n");
-				break;
-			case WAIT_FAILED : // Could use call GetLastError
-				printf("CheckAccess : WAIT_FAILED\n");
-				break;
-			default :
-				printf("CheckAccess : unknown error\n");
-				break;
-		}
-	}
-	return false;
-
-}
-
-
-void spoutDirectX::AllowAccess(HANDLE hAccessMutex, ID3D11Texture2D* pSharedTexture)
-{
-
-	UNREFERENCED_PARAMETER(pSharedTexture);
-
-	// For debugging
-	if(!bUseAccessLocks) return;
-
-	if(hAccessMutex) ReleaseMutex(hAccessMutex);
-
-}
-
-
-// LJ DEBUG - Receiver access mutex
-bool spoutDirectX::CreateReceiverAccessMutex(const char *name, HANDLE &hAccessMutex)
-{
-	DWORD errnum;
-	char szMutexName[300]; // name of the mutex
-
-	// printf("spoutDirectX::CreateReceiverAccessMutex\n");
-
-	// Create the mutex name to control access to the shared texture
-	sprintf_s((char*)szMutexName, 300, "%s_SpoutReceiverAccessMutex", name);
-
-	// Create or open mutex depending, on whether it already exists or not
-    hAccessMutex = CreateMutexA ( NULL,   // default security
-						  FALSE,  // No initial owner
-						  (LPCSTR)szMutexName);
-
-	if (hAccessMutex == NULL) {
-		printf("CreateReceiverAccessMutex : failed\n");
-        return false;
-	}
-	else {
-		errnum = GetLastError();
-		// printf("read event GetLastError() = %d\n", errnum);
-		if(errnum == ERROR_INVALID_HANDLE) {
-			printf("receiver access mutex [%s] invalid handle\n", szMutexName);
-		}
-		if(errnum == ERROR_ALREADY_EXISTS) {
-			// printf("receiver access mutex [%s] already exists\n", szMutexName);
-		}
-		else {
-			// printf("reciever access mutex [%s] created\n", szMutexName);
-		}
-	}
-
-	return true;
-
-}
-
-void spoutDirectX::CloseReceiverAccessMutex(HANDLE &hAccessMutex)
-{
-	if(hAccessMutex) CloseHandle(hAccessMutex);
-	hAccessMutex = NULL; // makes sure the passed handle is set to NULL
-}
-
-
-// LJ DEBUG - testing
-// Checks whether a receiver is holding the lock and waits for access for 4 frames if so.
-// For receiving from Version 1 apps with no mutex lock, a reader will have created the mutex and
-// will have sole access and rely on the interop locks
-bool spoutDirectX::CheckReceiverAccess(HANDLE hAccessMutex)
-{
-	DWORD dwWaitResult;
-
-	// For debugging
-	if(!bUseAccessLocks) return true;
-
-	// General mutex lock
-	if(!hAccessMutex) return true; 
-
-	// If this function is called it is a 2.005 sender app
-	// 2.004 senders will not create the receiver access mutex or use it
-
-	dwWaitResult = WaitForSingleObject(hAccessMutex, 67); // 4 frames at 60fps
-	if (dwWaitResult == WAIT_OBJECT_0 ) {
-		// The state of the object is signalled.
-		return true;
-	}
-	else {
-		switch(dwWaitResult) {
-			case WAIT_ABANDONED : // Could return here
-				// printf("CheckReceiverAccess : WAIT_ABANDONED\n");
-				break;
-			case WAIT_TIMEOUT : // The time-out interval elapsed, and the object's state is nonsignaled.
-				// printf("CheckReceiverAccess : WAIT_TIMEOUT\n");
-				break;
-			case WAIT_FAILED : // Could use call GetLastError
-				// printf("CheckReceiverAccess : WAIT_FAILED\n");
-				break;
-			default :
-				// printf("CheckReceiverAccess : unknown error\n");
-				break;
-		}
-	}
-	return false;
-
-}
-
-// LJ DEBUG - testing
-void spoutDirectX::AllowReceiverAccess(HANDLE hAccessMutex)
-{
-	// For debugging
-	if(!bUseAccessLocks) return;
-	if(hAccessMutex) ReleaseMutex(hAccessMutex);
-}
-
-
-void spoutDirectX::CloseDX11()
-{
-
-	if( g_pImmediateContext != NULL) {
-		g_pImmediateContext->Flush();
-		g_pImmediateContext->ClearState();
-		g_pImmediateContext->Release();
-	}
-	g_pImmediateContext = NULL;
-
-}
-
 
 // Set required graphics adapter for output
 bool spoutDirectX::SetAdapter(int index)
@@ -697,44 +511,48 @@ bool spoutDirectX::SetAdapter(int index)
 	char adaptername[128];
 	IDXGIAdapter* pAdapter = nullptr;
 
-	g_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
-	g_pAdapterDX11 = nullptr; // DX11
+	SpoutLogNotice("spoutDirectX::SetAdapter(%d)\n", index);
+
+	m_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
+	m_pAdapterDX11 = nullptr; // DX11
 
 	// Reset
-	if(index == -1) {
+	if(index == -1)
 		return true;
-	}
-
-	// printf("spoutDirectX::SetAdapter(%d)\n", index);
 
 	// Is the requested adapter available
 	if(index > GetNumAdapters()-1) {
-		// printf("Index greater than number of adapters\n");
+		SpoutLogError("spoutDirectX::SetAdapter(%d) - Index greater than number of adapters", index);
 		return false;
 	}
 
 	if(!GetAdapterName(index, adaptername, 128)) {
-		// printf("Incompatible adapter\n");
+		SpoutLogError("spoutDirectX::SetAdapter(%d) - Incompatible adapter", index);
+		return false;
+	}
+
+	// 17.03.18 - test for a valid pointer
+	if (!GetAdapterPointer(index)) {
+		SpoutLogError("spoutDirectX::SetAdapter(%d) - Incompatible adapter", index);
 		return false;
 	}
 
 	// Set the global adapter pointer for DX11
 	pAdapter = GetAdapterPointer(index);
 	if(pAdapter == nullptr) {
-		// printf("Could not get pointer for adapter %d\n", index);
+		SpoutLogError("spoutDirectX::SetAdapter - Could not get pointer for adapter %d", index);
 		return false;
 	}
+	m_pAdapterDX11 = pAdapter;
 
-	// Set the global adapter pointer for DX11
-	g_pAdapterDX11 = pAdapter;
 	// Set the global adapter index for DX9
-	g_AdapterIndex = index;
+	m_AdapterIndex = index;
 
-	// LJ DEBUG - in case of incompatibility - test everything here
+	// In case of remaining incompatibility - test everything here
 
-	// 2.005 what is the directX mode ?
+	// For >= 2.005 check the directX sharing mode
 	DWORD dwDX9 = 0;
-	ReadDwordFromRegistry(&dwDX9, "Software\\Leading Edge\\Spout", "DX9");
+	ReadDwordFromRegistry(HKEY_CURRENT_USER, "Software\\Leading Edge\\Spout", "DX9", &dwDX9);
 
 	if(dwDX9 == 1) {
 
@@ -743,38 +561,38 @@ bool spoutDirectX::SetAdapter(int index)
 		IDirect3DDevice9Ex* pDevice;     // DX9 device
 		pD3D = CreateDX9object(); 
 		if(pD3D == NULL) {
-			// printf("SetAdapter - could not create DX9 object\n");
-			g_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
-			g_pAdapterDX11 = nullptr; // DX11
+			SpoutLogError("spoutDirectX::SetAdapter(%d) - could not create DX9 object", index);
+			// Reset to default adapter
+			m_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
+			m_pAdapterDX11 = nullptr; // DX11
 			return false;
 		}
 		pDevice = CreateDX9device(pD3D, NULL); 
 		if(pDevice == NULL) {
-			// printf("SetAdapter - could not create DX9 device\n");
+			SpoutLogError("spoutDirectX::SetAdapter(%d) - could not create DX9 device", index);
 			pD3D->Release();
-			g_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
-			g_pAdapterDX11 = nullptr; // DX11
+			// Reset to default adapter
+			m_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
+			m_pAdapterDX11 = nullptr; // DX11
 			return false;
 		}
 		pD3D->Release();
 		pDevice->Release();
-		// printf("SetAdapter - created DX9 device OK\n");
 	}
 	else {
 		// Try to create a DirectX 11 device
 		ID3D11Device* pd3dDevice;
 		pd3dDevice = CreateDX11device();
 		if(pd3dDevice == NULL) {
-			// printf("SetAdapter - could not create DX11 device\n");
-			// Close it because not initialized yet and is just a test
-			pd3dDevice->Release();
-			g_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
-			g_pAdapterDX11 = nullptr; // DX11
+			SpoutLogError("spoutDirectX::SetAdapter(%d) - could not create DX11 device", index);
+			m_AdapterIndex = D3DADAPTER_DEFAULT; // DX9
+			m_pAdapterDX11 = nullptr; // DX11
 			return false;
 		}
-		// printf("SetAdapter - created DX11 device OK\n");
+		// Close it because this is just a test
+		// See : https://github.com/leadedge/Spout2/issues/17
+		ReleaseDX11Device(pd3dDevice);
 	}
-
 
 	return true;
 
@@ -783,9 +601,74 @@ bool spoutDirectX::SetAdapter(int index)
 // Get the global adapter index
 int spoutDirectX::GetAdapter()
 {
-	return g_AdapterIndex;
+	return m_AdapterIndex;
 }
 
+
+// FOR DEBUGGING 
+bool spoutDirectX::FindNVIDIA(int &nAdapter)
+{
+	IDXGIFactory1* _dxgi_factory1;
+	IDXGIAdapter* adapter1_ptr = nullptr;
+	DXGI_ADAPTER_DESC desc;
+	UINT32 i;
+	bool bFound = false;
+
+	if ( FAILED( CreateDXGIFactory1( __uuidof(IDXGIFactory1), (void**)&_dxgi_factory1 ) ) )
+		return false;
+
+	for ( i = 0; _dxgi_factory1->EnumAdapters( i, &adapter1_ptr ) != DXGI_ERROR_NOT_FOUND; i++ )	{
+		adapter1_ptr->GetDesc( &desc );
+		// printf("spoutDirectX::FindNVIDIA - Adapter(%d) : %S\n", i, desc.Description );
+		/*
+		DXGI_OUTPUT_DESC desc_out;
+		IDXGIOutput* p_output = nullptr;
+		if(adapter1_ptr->EnumOutputs(0, &p_output ) == DXGI_ERROR_NOT_FOUND) {
+			printf("  No outputs\n");
+			continue;
+		}
+
+		for ( UINT32 j = 0; adapter1_ptr->EnumOutputs( j, &p_output ) != DXGI_ERROR_NOT_FOUND; j++ ) {
+			p_output->GetDesc( &desc_out );
+			// printf( "  Output : %d\n", j );
+			// printf( "    Name %S\n", desc_out.DeviceName );
+			// printf( "    Attached to desktop : (%d) %s\n", desc_out.AttachedToDesktop, desc_out.AttachedToDesktop ? "yes" : "no" );
+			// printf( "    Rotation : %d\n", desc_out.Rotation );
+			// printf( "    Left     : %d\n", desc_out.DesktopCoordinates.left );
+			// printf( "    Top      : %d\n", desc_out.DesktopCoordinates.top );
+			// printf( "    Right    : %d\n", desc_out.DesktopCoordinates.right );
+			// printf( "    Bottom   : %d\n", desc_out.DesktopCoordinates.bottom );
+			if( p_output )
+				p_output->Release();
+		}
+		*/
+		if(wcsstr(desc.Description, L"NVIDIA")) {
+			// printf("spoutDirectX::FindNVIDIA - Found NVIDIA adapter %d (%S)\n", i, desc.Description);
+			bFound = true;
+			break;
+		}
+
+	}
+
+	_dxgi_factory1->Release();
+
+	if(bFound) {
+		// printf// ("spoutDirectX::FindNVIDIA - Found NVIDIA adapter %d (%S)\n", i, desc.Description);
+		nAdapter = i;
+		//	0x10DE	NVIDIA
+		//	0x163C	intel
+		//	0x8086  Intel
+		//	0x8087  Intel
+		// printf("Vendor    = %d [0x%X]\n", desc.VendorId, desc.VendorId);
+		// printf("Revision  = %d [0x%X]\n", desc.Revision, desc.Revision);
+		// printf("Device ID = %d [0x%X]\n", desc.DeviceId, desc.DeviceId);
+		// printf("SubSys ID = %d [0x%X]\n", desc.SubSysId, desc.SubSysId);
+		return true;
+	}
+
+	return false;
+
+}
 
 
 // Get the number of graphics adapters in the system
@@ -795,46 +678,41 @@ int spoutDirectX::GetNumAdapters()
 	IDXGIAdapter* adapter1_ptr = nullptr;
 	UINT32 i;
 
-	// printf("spoutDirectX::GetNumAdapters\n");
-
 	// Enum Adapters first : multiple video cards
-	if ( FAILED( CreateDXGIFactory1( __uuidof(IDXGIFactory1), (void**)&_dxgi_factory1 ) ) )
+	if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&_dxgi_factory1))) {
+		SpoutLogError("spoutDirectX::GetNumAdapters - No adapters found");
 		return 0;
+	}
 
-	for ( i = 0; _dxgi_factory1->EnumAdapters( i, &adapter1_ptr ) != DXGI_ERROR_NOT_FOUND; i++ )	{
-		// DXGI_ADAPTER_DESC	desc;
-		// adapter1_ptr->GetDesc( &desc );
-		// printf( "Adapter : %S\n", desc.Description );
-		// adapter1_ptr->Release();
+	for (i = 0; _dxgi_factory1->EnumAdapters( i, &adapter1_ptr ) != DXGI_ERROR_NOT_FOUND; i++ )	{
 
-		// printf( "bdd_spout : D3D11 Adapter %d found\n", i );
-		DXGI_ADAPTER_DESC	desc;
+		DXGI_ADAPTER_DESC desc;
 		adapter1_ptr->GetDesc( &desc );
-		printf( "Adapter(%d) : %S\n", i, desc.Description );
-		printf( "  Vendor Id : %d\n", desc.VendorId );
-		// printf( "  Dedicated System Memory : %.0f MiB\n", (float)desc.DedicatedSystemMemory / (1024.f * 1024.f) );
-		// printf( "  Dedicated Video Memory : %.0f MiB\n", (float)desc.DedicatedVideoMemory / (1024.f * 1024.f) );
-		// printf( "  Shared System Memory : %.0f MiB\n", (float)desc.SharedSystemMemory / (1024.f * 1024.f) );
-		
+		// printf("Adapter(%d) : %S\n", i, desc.Description );
+		// printf("  Vendor Id : %d\n", desc.VendorId );
+		// printf("  Dedicated System Memory : %.0f MiB\n", (float)desc.DedicatedSystemMemory / (1024.f * 1024.f) );
+		// printf("  Dedicated Video Memory : %.0f MiB\n", (float)desc.DedicatedVideoMemory / (1024.f * 1024.f) );
+		// printf("  Shared System Memory : %.0f MiB", (float)desc.SharedSystemMemory / (1024.f * 1024.f) );
 		IDXGIOutput* p_output = nullptr;
+		
+		// 24-10-18 change from error to warning
 		if(adapter1_ptr->EnumOutputs(0, &p_output ) == DXGI_ERROR_NOT_FOUND) {
-			printf("  No outputs\n");
+			SpoutLogWarning("spoutDirectX::GetNumAdapters Adapter(%d) :  No outputs", i);
 		}
 
 		for ( UINT32 j = 0; adapter1_ptr->EnumOutputs( j, &p_output ) != DXGI_ERROR_NOT_FOUND; j++ ) {
-			DXGI_OUTPUT_DESC	desc_out;
+			DXGI_OUTPUT_DESC desc_out;
 			p_output->GetDesc( &desc_out );
-			printf( "  Output : %d\n", j );
-			printf( "    Name %S\n", desc_out.DeviceName );
-			printf( "    Attached to desktop : (%d) %s\n", desc_out.AttachedToDesktop, desc_out.AttachedToDesktop ? "yes" : "no" );
-			printf( "    Rotation : %d\n", desc_out.Rotation );
-			printf( "    Left     : %d\n", desc_out.DesktopCoordinates.left );
-			printf( "    Top      : %d\n", desc_out.DesktopCoordinates.top );
-			printf( "    Right    : %d\n", desc_out.DesktopCoordinates.right );
-			printf( "    Bottom   : %d\n", desc_out.DesktopCoordinates.bottom );
+			// printf("  Output : %d\n", j );
+			// printf("    Name %S\n", desc_out.DeviceName );
+			// printf("    Attached to desktop : (%d) %s\n", desc_out.AttachedToDesktop, desc_out.AttachedToDesktop ? "yes" : "no" );
+			// printf("    Rotation : %d\n", desc_out.Rotation );
+			// printf("    Left     : %d\n", desc_out.DesktopCoordinates.left );
+			// printf("    Top      : %d\n", desc_out.DesktopCoordinates.top );
+			// printf("    Right    : %d\n", desc_out.DesktopCoordinates.right );
+			// printf("    Bottom   : %d\n", desc_out.DesktopCoordinates.bottom );
 			if( p_output )
 				p_output->Release();
-
 		}
 	}
 
@@ -849,25 +727,21 @@ bool spoutDirectX::GetAdapterName(int index, char *adaptername, int maxchars)
 {
 	IDXGIFactory1* _dxgi_factory1;
 	IDXGIAdapter* adapter1_ptr = nullptr;
-	UINT32 i;
 
-	if ( FAILED( CreateDXGIFactory1( __uuidof(IDXGIFactory1), (void**)&_dxgi_factory1 ) ) )
+	if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&_dxgi_factory1))) {
+		SpoutLogError("spoutDirectX::GetAdapterName - Could not create CreateDXGIFactory1");
 		return false;
+	}
 	
-	for ( i = 0; _dxgi_factory1->EnumAdapters( i, &adapter1_ptr ) != DXGI_ERROR_NOT_FOUND; i++ ) {
+	for (UINT32 i = 0; _dxgi_factory1->EnumAdapters( i, &adapter1_ptr ) != DXGI_ERROR_NOT_FOUND; i++ ) {
 		if((int)i == index) {
 			DXGI_ADAPTER_DESC	desc;
 			adapter1_ptr->GetDesc( &desc );
 			adapter1_ptr->Release();
 			size_t charsConverted = 0;
-			wcstombs_s(&charsConverted, adaptername, maxchars, desc.Description, maxchars-1);
-			// Is the adapter compatible ?
-			// TODO : test for Intel graphics version ?
-			// 11.08.15 - removed for use with Intel HD4400/5000 graphics
-			// if(strstr(adaptername, "Intel")) {
-				// printf("Intel graphics not supported\n");
-				// return false;
-			// }
+			size_t maxBytes = maxchars;
+			wcstombs_s(&charsConverted, adaptername, maxBytes, desc.Description, maxBytes - 1);
+			// Is the adapter compatible ? TODO
 			_dxgi_factory1->Release();
 			return true;
 		}
@@ -881,31 +755,29 @@ bool spoutDirectX::GetAdapterName(int index, char *adaptername, int maxchars)
 
 IDXGIAdapter* spoutDirectX::GetAdapterPointer(int index)
 {
-	// printf("spoutDirectX::GetAdapterPointer(%d)\n", index);
-
 	// Enum Adapters first : multiple video cards
 	IDXGIFactory1*	_dxgi_factory1;
 	if ( FAILED( CreateDXGIFactory1( __uuidof(IDXGIFactory1), (void**)&_dxgi_factory1 ) ) )	{
-		printf( "    Could not create CreateDXGIFactory1\n" );
+		SpoutLogError("spoutDirectX::GetAdapterPointer - Could not create CreateDXGIFactory1" );
 		return nullptr;
 	}
 
 	IDXGIAdapter* adapter1_ptr = nullptr;
 	for ( UINT32 i = 0; _dxgi_factory1->EnumAdapters( i, &adapter1_ptr ) != DXGI_ERROR_NOT_FOUND; i++ )	{
 		if ( index == (int)i ) {
-			// printf("   Adapter %d matches\n", i);
 			// Now we have the requested adapter, but does it support the required extensions
+			// 17-03-18 test for an output on the adapter
+			IDXGIOutput* p_output = nullptr;
+			if (adapter1_ptr->EnumOutputs(0, &p_output) == DXGI_ERROR_NOT_FOUND) {
+				SpoutLogError("spoutDirectX::GetAdapterPointer(%d) :  No outputs", i);
+				_dxgi_factory1->Release();
+				return nullptr;
+			}
 			_dxgi_factory1->Release();
 			return adapter1_ptr;
 		}
-		else {
-			// printf("   Adapter %d found\n", i);
-		}
 		adapter1_ptr->Release();
 	}
-
-	// printf("   Adapter %d not found\n", index);
-
 	_dxgi_factory1->Release();
 
 	return nullptr;
@@ -918,25 +790,27 @@ bool spoutDirectX::GetAdapterInfo(char *adapter, char *display, int maxchars)
 	IDXGIAdapter* adapter1_ptr = nullptr;
 	UINT32 i;
 	size_t charsConverted = 0;
-	
+	size_t maxBytes = maxchars;
+
 	// Enum Adapters first : multiple video cards
-	if ( FAILED( CreateDXGIFactory1( __uuidof(IDXGIFactory1), (void**)&_dxgi_factory1 ) ) )
+	if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&_dxgi_factory1))) {
+		SpoutLogError("spoutDirectX::GetAdapterInfo - Could not create CreateDXGIFactory1");
 		return false;
+	}
 
 	for ( i = 0; _dxgi_factory1->EnumAdapters( i, &adapter1_ptr ) != DXGI_ERROR_NOT_FOUND; i++ )	{
 
 		DXGI_ADAPTER_DESC	desc;
 		adapter1_ptr->GetDesc( &desc );
-
 		// Return the current adapter - max of 2 assumed
-		wcstombs_s(&charsConverted, adapter, maxchars, desc.Description, maxchars-1);
+		wcstombs_s(&charsConverted, adapter, maxBytes, desc.Description, maxBytes-1);
 
 		IDXGIOutput*	p_output = nullptr;
 		for ( UINT32 j = 0; adapter1_ptr->EnumOutputs( j, &p_output ) != DXGI_ERROR_NOT_FOUND; j++ ) {
 			DXGI_OUTPUT_DESC	desc_out;
 			p_output->GetDesc( &desc_out );
 			if(desc_out.AttachedToDesktop)
-				wcstombs_s(&charsConverted, display, maxchars, desc.Description, maxchars-1);
+				wcstombs_s(&charsConverted, display, maxBytes, desc.Description, maxBytes-1);
 			if( p_output )
 				p_output->Release();
 		}
@@ -947,61 +821,96 @@ bool spoutDirectX::GetAdapterInfo(char *adapter, char *display, int maxchars)
 	return true;
 }
 
-// 20.11.15 - moved from interop class
-bool spoutDirectX::ReadDwordFromRegistry(DWORD *pValue, const char *subkey, const char *valuename)
+
+unsigned long spoutDirectX::ReleaseDX11Texture(ID3D11Device* pd3dDevice, ID3D11Texture2D* pTexture)
 {
-	HKEY  hRegKey;
-	LONG  regres;
-	DWORD  dwSize, dwKey;  
+	if (!pd3dDevice || !pTexture)
+		return 0;
 
-	dwSize = MAX_PATH;
-
-	// Does the key exist
-	regres = RegOpenKeyExA(HKEY_CURRENT_USER, subkey, NULL, KEY_READ, &hRegKey);
-	if(regres == ERROR_SUCCESS) {
-		// Read the key DWORD value
-		regres = RegQueryValueExA(hRegKey, valuename, NULL, &dwKey, (BYTE*)pValue, &dwSize);
-		RegCloseKey(hRegKey);
-		if(regres == ERROR_SUCCESS)
-			return true;
+	unsigned long refcount = pTexture->Release();
+	if (m_pImmediateContext) {
+		m_pImmediateContext->ClearState();
+		m_pImmediateContext->Flush();
 	}
 
-	// Just quit if the key does not exist
-	return false;
+	if (refcount > 0) 
+		SpoutLogWarning("spoutDirectX::ReleaseDX11Texture - refcount = %d", refcount);
 
-}
-
-bool spoutDirectX::WriteDwordToRegistry(DWORD dwValue, const char *subkey, const char *valuename)
-{
-	HKEY  hRegKey;
-	LONG  regres;
-	char  mySubKey[512];
-
-	// The required key
-	strcpy_s(mySubKey, 512, subkey);
-
-	// Does the key already exist ?
-	regres = RegOpenKeyExA(HKEY_CURRENT_USER, mySubKey, NULL, KEY_ALL_ACCESS, &hRegKey);
-	if(regres != ERROR_SUCCESS) { 
-		// Create a new key
-		regres = RegCreateKeyExA(HKEY_CURRENT_USER, mySubKey, NULL, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS,NULL, &hRegKey, NULL);
-	}
-
-	if(regres == ERROR_SUCCESS && hRegKey != NULL) {
-		// Write the DWORD value
-		regres = RegSetValueExA(hRegKey, valuename, 0, REG_DWORD, (BYTE*)&dwValue, 4);
-		// For immediate read after write - necessary here because the app might set the values 
-		// and read the registry straight away and it might not be available yet
-		// The key must have been opened with the KEY_QUERY_VALUE access right (included in KEY_ALL_ACCESS)
-		RegFlushKey(hRegKey); // needs an open key
-		RegCloseKey(hRegKey); // Done with the key
-    }
-
-	if(regres == ERROR_SUCCESS)
-		return true;
-	else
-		return false;
-
+	return refcount;
 }
 
 
+unsigned long spoutDirectX::ReleaseDX11Device(ID3D11Device* pd3dDevice)
+{
+	if (!pd3dDevice)
+		return 0;
+
+	// Release the global context or there is an outstanding ref count
+	// when the device is released
+	if (m_pImmediateContext) {
+		// Clear state and flush context to prevent deferred device release
+		// From Microsoft docs :
+		// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx
+		// Microsoft Direct3D 11 defers the destruction of objects. 
+		// Therefore, an application can't rely upon objects immediately being destroyed.
+		// By calling Flush, you destroy any objects whose destruction was deferred.
+		// If an application requires synchronous destruction of an object, we recommend
+		// that the application release all its references, call 
+		// ID3D11DeviceContext::ClearState, and then call Flush.
+		m_pImmediateContext->ClearState();
+		m_pImmediateContext->Flush();
+		m_pImmediateContext->Release();
+		m_pImmediateContext = NULL;
+	}
+	unsigned long refcount = pd3dDevice->Release();
+
+	// Device release warning
+	if (refcount > 0)
+		SpoutLogWarning("spoutDirectX::ReleaseDX11Device - refcount = %d", refcount);
+
+	pd3dDevice = NULL;
+
+	return refcount;
+}
+
+
+void spoutDirectX::FlushWait(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pImmediateContext)
+{
+	D3D11_QUERY_DESC queryDesc;
+	ID3D11Query * pQuery = NULL;
+
+	if (!pImmediateContext)
+		return;
+
+	// ==================================================
+	// Tests confirm that for a sender the following code
+	// eliminates jerky texture access by a receiver.
+	// ==================================================
+
+	//
+	// CopyResource is an asynchronous call.
+	// https://msdn.microsoft.com/en-us/library/windows/desktop/bb205132%28v=vs.85%29.aspx#Performance_Considerations
+	// "the copy has not necessarily executed by the time the method returns".
+	//
+
+	// A flush is necessary to finish the command queue.
+	pImmediateContext->Flush();
+
+	// Make sure the CopyResource function has completed before
+	// the receiver application accesses the shared texture.
+	// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476578%28v=vs.85%29.aspx
+	//
+	ZeroMemory(&queryDesc, sizeof(queryDesc));
+	queryDesc.Query = D3D11_QUERY_EVENT;
+	// When the GPU is finished, ID3D11DeviceContext::GetData will return S_OK.
+	// When using this type of query, ID3D11DeviceContext::Begin is disabled.
+	ZeroMemory(&queryDesc, sizeof(queryDesc));
+	queryDesc.Query = D3D11_QUERY_EVENT;
+	pd3dDevice->CreateQuery(&queryDesc, &pQuery);
+	if (pQuery) {
+		pImmediateContext->End(pQuery);
+		while (S_OK != pImmediateContext->GetData(pQuery, NULL, 0, 0));
+		pQuery->Release();
+	}
+
+}

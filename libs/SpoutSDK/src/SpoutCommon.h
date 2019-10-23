@@ -1,10 +1,13 @@
 /*
 
-			Spout.h
+			SpoutCommon.h
 
-			The main Spout include file for the SDK
+			Enables build of the SDK as a DLL
+			Includes header for utilities - SpoutUtils
+			Optional legacyOpenGL define to enable legacy draw functions
 
-		Copyright (c) 2014-2016, Lynn Jarvis. All rights reserved.
+
+		Copyright (c) 2014-2019, Lynn Jarvis. All rights reserved.
 
 		Redistribution and use in source and binary forms, with or without modification, 
 		are permitted provided that the following conditions are met:
@@ -45,5 +48,12 @@
 	#define SPOUT_DLLEXP
 #endif // _MSC_VERR
 
+// This definition enables legacy OpenGL rendering code
+// used for shared texture Draw functions
+// Disable for OpenGL 4 compliance
+#define legacyOpenGL
+
+// Common utility functions namespace
+#include "SpoutUtils.h"
 
 #endif

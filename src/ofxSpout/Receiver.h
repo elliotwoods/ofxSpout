@@ -11,7 +11,7 @@ namespace ofxSpout {
 		Receiver();
 		~Receiver();
 
-		bool init(string channelName = "");
+		bool init(std::string channelName = "");
 		void release();
 		bool isInitialized() const;
 
@@ -19,15 +19,13 @@ namespace ofxSpout {
 
 		bool selectSenderPanel();
 
-		string getChannelName() const;
+		std::string getChannelName() const;
 		float getWidth() const;
 		float getHeight() const;
-	protected:
-		string channelName;
 
+	protected:
 		SpoutReceiver * spoutReceiver;
-		int width;
-		int height;
+
 		const int defaultFormat; // = GL_RGBA. If you're using anything else then make sure to allocate your texture manually
 	};
 }
