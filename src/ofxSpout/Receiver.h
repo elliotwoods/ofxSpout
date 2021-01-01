@@ -2,8 +2,8 @@
 
 #include "ofLog.h"
 #include "ofTexture.h"
-#include <string>
 #include <vector>
+#include <string>
 #include "SpoutReceiver.h"
 
 namespace ofxSpout {
@@ -24,7 +24,7 @@ namespace ofxSpout {
 		float getWidth() const;
 		float getHeight() const;
 
-		std::vector<std::string> getAvailableSenders;
+		std::vector<std::string> getAvailableSenders();
 
 
 	protected:
