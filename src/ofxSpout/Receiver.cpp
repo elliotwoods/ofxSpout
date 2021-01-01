@@ -118,4 +118,17 @@ namespace ofxSpout {
 		}
 		return 0;
 	}
+	vector<std::string> Receiver::getAvailableSenders() {
+		if (this.isInitialized()) {
+			int n_senders {this->spoutReceiver->GetSenderCount()};
+			vector<std::string> senders {vector<std::string>()};
+			for (int i = 0; i < n_senders; i++) {
+				char name[100]{0};
+				this->spoutReceiver->GetSender(i, &name);
+				senders.push_back((std::string)senders);
+			}
+			return senders;
+		}
+		return vector<std::string>();
+	}
 }
