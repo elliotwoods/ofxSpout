@@ -3,6 +3,7 @@
 #include "ofLog.h"
 #include "ofTexture.h"
 #include <string>
+#include <vector>
 #include "SpoutReceiver.h"
 
 namespace ofxSpout {
@@ -22,6 +23,9 @@ namespace ofxSpout {
 		std::string getChannelName() const;
 		float getWidth() const;
 		float getHeight() const;
+		
+		vector<std::string> getAvailableSenders;
+		
 
 	protected:
 		SpoutReceiver * spoutReceiver;
