@@ -1,6 +1,7 @@
 #include "Receiver.h"
 #include "ofGraphics.h"
 #include "Utils.h"
+#include "ofMain.h"
 
 namespace ofxSpout {
 	//----------

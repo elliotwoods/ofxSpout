@@ -3,6 +3,7 @@
 #include "Utils.h"
 
 #include "ofFbo.h"
+#include "ofMain.h"
 
 namespace ofxSpout {
 	//----------
