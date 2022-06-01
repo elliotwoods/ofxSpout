@@ -5,7 +5,7 @@
 namespace ofxSpout {
 	//----------
 	Receiver::Receiver() :
-		defaultFormat(GL_RGBA) {
+		textureFormat(GL_RGBA) {
 		this->spoutReceiver = nullptr;
 	}
 
@@ -15,8 +15,10 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Receiver::init(std::string channelName) {
+	bool Receiver::init(std::string channelName, int textureFormat) {
 		this->release();
+
+		this->textureFormat = textureFormat;
 
 		try {
 			this->spoutReceiver = new SpoutReceiver();
@@ -62,7 +64,7 @@ namespace ofxSpout {
 
 			//check if the texture is allocated correctly, if not, allocate it
 			if (this->spoutReceiver->IsUpdated()) {
-				texture.allocate(this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight(), GL_RGBA);
+				texture.allocate(this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight(), this->textureFormat);
 			}
 
 			//pull data into the texture (keep any existing fbo attachments)

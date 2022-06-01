@@ -11,7 +11,7 @@ namespace ofxSpout {
 		Receiver();
 		~Receiver();
 
-		bool init(std::string channelName = "");
+		bool init(std::string channelName = "", int textureFormat = GL_RGBA);
 		void release();
 		bool isInitialized() const;
 
@@ -26,6 +26,6 @@ namespace ofxSpout {
 	protected:
 		SpoutReceiver * spoutReceiver;
 
-		const int defaultFormat; // = GL_RGBA. If you're using anything else then make sure to allocate your texture manually
+		int textureFormat;
 	};
 }

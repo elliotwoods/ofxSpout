@@ -31,9 +31,12 @@ namespace ofxSpout {
 			this->glFormat = glFormat;
 
 			//create the sender, and allow for Spout to change our channel name
-			if (!this->spoutSender->SetupSender(channelName.c_str(), initialWidth, initialHeight, toDXFormat(this->glFormat))) {
+			if (!this->spoutSender->SetupSender(channelName.c_str(), initialWidth, initialHeight, false, toDXFormat(this->glFormat))) {
 				throw("Can't create sender");
 			}
+
+			ofLogNotice(__FUNCTION__) << "Created sender " << channelName << " " << initialWidth << "x" << initialHeight << " with format " << toGLString(this->glFormat) << " => " << toDXString(toDXFormat(this->glFormat));
+
 			return true;
 		}
 		catch (const char * e) {
