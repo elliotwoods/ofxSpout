@@ -2,6 +2,7 @@
 
 #include "ofLog.h"
 #include "ofTexture.h"
+#include <vector>
 #include <string>
 #include "SpoutReceiver.h"
 
@@ -15,7 +16,7 @@ namespace ofxSpout {
 		void release();
 		bool isInitialized() const;
 
-		bool receive(ofTexture &); // will automatically allocate the texture
+		bool receive(ofTexture&); // will automatically allocate the texture
 
 		bool selectSenderPanel();
 
@@ -23,8 +24,11 @@ namespace ofxSpout {
 		float getWidth() const;
 		float getHeight() const;
 
+		std::vector<std::string> getAvailableSenders();
+
+
 	protected:
-		SpoutReceiver * spoutReceiver;
+		SpoutReceiver* spoutReceiver;
 
 		int textureFormat;
 	};

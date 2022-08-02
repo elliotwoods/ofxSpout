@@ -30,7 +30,7 @@ namespace ofxSpout {
 
 			return true;
 		}
-		catch (const char * e) {
+		catch (const char* e) {
 			ofLogError(__FUNCTION__) << "Channel : " << channelName << " : " << e;
 			return false;
 		}
@@ -56,7 +56,7 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Receiver::receive(ofTexture & texture) {
+	bool Receiver::receive(ofTexture& texture) {
 		try {
 			//check if we're initialised
 			if (!this->isInitialized()) {
@@ -77,7 +77,7 @@ namespace ofxSpout {
 
 			return true;
 		}
-		catch (const char * e) {
+		catch (const char* e) {
 			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
@@ -92,12 +92,12 @@ namespace ofxSpout {
 			this->spoutReceiver->SelectSender();
 			return true;
 		}
-		catch (const char * e) {
+		catch (const char* e) {
 			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
-	
+
 	//-----------
 	std::string Receiver::getChannelName() const {
 		if (this->isInitialized()) {
@@ -120,5 +120,20 @@ namespace ofxSpout {
 			return this->spoutReceiver->GetSenderHeight();
 		}
 		return 0;
+	}
+
+	std::vector<std::string> Receiver::getAvailableSenders() {
+		if (this->isInitialized()) {
+			int n_senders{ this->spoutReceiver->GetSenderCount() };
+			std::vector<std::string> senders;
+			for (int i = 0; i < n_senders; i++) {
+				char name[100]{'\0'};
+				this->spoutReceiver->GetSender(i, name, 100); 
+				std::string name_s{ name };
+				senders.push_back(name_s);
+			}
+			return senders;
+		}
+		return std::vector<std::string>();
 	}
 }
