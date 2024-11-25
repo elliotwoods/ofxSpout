@@ -2,6 +2,7 @@
 
 #include "ofLog.h"
 #include "ofTexture.h"
+#include <vector>
 #include <string>
 
 class SpoutReceiver;
@@ -12,11 +13,11 @@ namespace ofxSpout {
 		Receiver();
 		~Receiver();
 
-		bool init(std::string channelName = "");
+		bool init(std::string channelName = "", int textureFormat = GL_RGBA);
 		void release();
 		bool isInitialized() const;
 
-		bool receive(ofTexture &); // will automatically allocate the texture
+		bool receive(ofTexture&); // will automatically allocate the texture
 
 		bool selectSenderPanel();
 
@@ -24,9 +25,12 @@ namespace ofxSpout {
 		float getWidth() const;
 		float getHeight() const;
 
-	protected:
-		SpoutReceiver * spoutReceiver;
+		std::vector<std::string> getAvailableSenders();
 
-		const int defaultFormat; // = GL_RGBA. If you're using anything else then make sure to allocate your texture manually
+
+	protected:
+		SpoutReceiver* spoutReceiver;
+
+		int textureFormat;
 	};
 }

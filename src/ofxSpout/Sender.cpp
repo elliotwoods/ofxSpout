@@ -3,6 +3,7 @@
 #include "Utils.h"
 
 #include "ofFbo.h"
+#include "ofMain.h"
 
 #include <gl/glew.h>
 #include "SpoutSender.h"
@@ -34,8 +35,16 @@ namespace ofxSpout {
 			this->glFormat = glFormat;
 
 			//create the sender, and allow for Spout to change our channel name
+<<<<<<< HEAD
 			this->spoutSender->SetSenderName(channelName.c_str());
 			this->spoutSender->SetSenderFormat(ofxSpout::toDXFormat(glFormat));
+=======
+			if (!this->spoutSender->SetupSender(channelName.c_str(), initialWidth, initialHeight, false, toDXFormat(this->glFormat))) {
+				throw("Can't create sender");
+			}
+
+			ofLogNotice(__FUNCTION__) << "Created sender " << channelName << " " << initialWidth << "x" << initialHeight << " with format " << toGLString(this->glFormat) << " => " << toDXString(toDXFormat(this->glFormat));
+>>>>>>> 7e6620087f17bc72b96ba5da2c2c2286ed5ecc12
 
 			return true;
 		}
