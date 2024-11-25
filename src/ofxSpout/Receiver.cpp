@@ -1,7 +1,6 @@
 #include "Receiver.h"
 #include "ofGraphics.h"
 #include "Utils.h"
-#include "ofMain.h"
 
 #include "gl/glew.h"
 #include "SpoutReceiver.h"
@@ -9,7 +8,7 @@
 namespace ofxSpout {
 	//----------
 	Receiver::Receiver() :
-		textureFormat(GL_RGBA) {
+		defaultFormat(GL_RGBA) {
 		this->spoutReceiver = nullptr;
 	}
 
@@ -19,10 +18,8 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Receiver::init(std::string channelName, int textureFormat) {
+	bool Receiver::init(std::string channelName) {
 		this->release();
-
-		this->textureFormat = textureFormat;
 
 		try {
 			this->spoutReceiver = new SpoutReceiver();
@@ -33,7 +30,7 @@ namespace ofxSpout {
 
 			return true;
 		}
-		catch (const char* e) {
+		catch (const char * e) {
 			ofLogError(__FUNCTION__) << "Channel : " << channelName << " : " << e;
 			return false;
 		}
@@ -59,14 +56,13 @@ namespace ofxSpout {
 	}
 
 	//----------
-	bool Receiver::receive(ofTexture& texture) {
+	bool Receiver::receive(ofTexture & texture) {
 		try {
 			//check if we're initialised
 			if (!this->isInitialized()) {
 				throw("Not initialized");
 			}
 
-<<<<<<< HEAD
 			if (this->spoutReceiver->ReceiveTexture()) {
 				// Update the receiving texture if the received size has changed
 				if (this->spoutReceiver->IsUpdated()) {
@@ -86,11 +82,6 @@ namespace ofxSpout {
 				else {
 					return false;
 				}
-=======
-			//check if the texture is allocated correctly, if not, allocate it
-			if (this->spoutReceiver->IsUpdated()) {
-				texture.allocate(this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight(), this->textureFormat);
->>>>>>> 7e6620087f17bc72b96ba5da2c2c2286ed5ecc12
 			}
 			else {
 				return false;
@@ -98,7 +89,7 @@ namespace ofxSpout {
 
 			return true;
 		}
-		catch (const char* e) {
+		catch (const char * e) {
 			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
@@ -113,12 +104,12 @@ namespace ofxSpout {
 			this->spoutReceiver->SelectSender();
 			return true;
 		}
-		catch (const char* e) {
+		catch (const char * e) {
 			ofLogError(__FUNCTION__) << e;
 			return false;
 		}
 	}
-
+	
 	//-----------
 	std::string Receiver::getChannelName() const {
 		if (this->isInitialized()) {
@@ -141,20 +132,5 @@ namespace ofxSpout {
 			return this->spoutReceiver->GetSenderHeight();
 		}
 		return 0;
-	}
-
-	std::vector<std::string> Receiver::getAvailableSenders() {
-		if (this->isInitialized()) {
-			int n_senders{ this->spoutReceiver->GetSenderCount() };
-			std::vector<std::string> senders;
-			for (int i = 0; i < n_senders; i++) {
-				char name[100]{'\0'};
-				this->spoutReceiver->GetSender(i, name, 100); 
-				std::string name_s{ name };
-				senders.push_back(name_s);
-			}
-			return senders;
-		}
-		return std::vector<std::string>();
 	}
 }
