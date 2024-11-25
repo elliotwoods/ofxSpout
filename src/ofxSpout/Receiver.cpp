@@ -2,6 +2,9 @@
 #include "ofGraphics.h"
 #include "Utils.h"
 
+#include "gl/glew.h"
+#include "SpoutReceiver.h"
+
 namespace ofxSpout {
 	//----------
 	Receiver::Receiver() :
@@ -60,16 +63,28 @@ namespace ofxSpout {
 				throw("Not initialized");
 			}
 
-			//check if the texture is allocated correctly, if not, allocate it
-			if (this->spoutReceiver->IsUpdated()) {
-				texture.allocate(this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight(), GL_RGBA);
+			if (this->spoutReceiver->ReceiveTexture()) {
+				// Update the receiving texture if the received size has changed
+				if (this->spoutReceiver->IsUpdated()) {
+					texture.allocate(this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight(), this->spoutReceiver->GLDXformat());
+					return false; // Return now because the texture will empty
+				}
+				// Bind to get access to the shared texture
+				if (this->spoutReceiver->BindSharedTexture()) {
+					// Copy from the shared texture 
+					this->spoutReceiver->CopyTexture(this->spoutReceiver->GetSharedTextureID(), GL_TEXTURE_2D,
+						texture.getTextureData().textureID,
+						texture.getTextureData().textureTarget,
+						this->spoutReceiver->GetSenderWidth(), this->spoutReceiver->GetSenderHeight());
+					// Un-bind to release access to the shared texture
+					this->spoutReceiver->UnBindSharedTexture();
+				}
+				else {
+					return false;
+				}
 			}
-
-			//pull data into the texture (keep any existing fbo attachments)
-			GLint drawFboId = 0;
-			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-			if (!this->spoutReceiver->ReceiveTextureData(texture.getTextureData().textureID, texture.getTextureData().textureTarget, drawFboId)) {
-				throw("Can't receive texture");
+			else {
+				return false;
 			}
 
 			return true;

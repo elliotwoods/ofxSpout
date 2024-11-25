@@ -3,7 +3,8 @@
 #include "ofLog.h"
 #include "ofTexture.h"
 #include <string>
-#include "SpoutReceiver.h"
+
+class SpoutReceiver;
 
 namespace ofxSpout {
 	class Receiver {

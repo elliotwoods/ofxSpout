@@ -21,30 +21,33 @@
   <ItemGroup>
     <ClInclude Include="..\libs\SpoutSDK\src\Spout.h" />
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutCommon.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutCopy.h" />
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutDirectX.h" />
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutGLDXinterop.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutFrameCount.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutGL.h" />
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutGLextensions.h" />
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutMemoryShare.h" />
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutReceiver.h" />
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutSDK.h" />
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutSender.h" />
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutSenderNames.h" />
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutSharedMemory.h" />
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutUtils.h" />
     <ClInclude Include="..\src\ofxSpout.h" />
     <ClInclude Include="..\src\ofxSpout\Receiver.h" />
     <ClInclude Include="..\src\ofxSpout\Sender.h" />
     <ClInclude Include="..\src\ofxSpout\Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\libs\SpoutSDK\src\Spout.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutCopy.cpp" />
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutDirectX.cpp" />
-    <ClCompile Include="..\libs\SpoutSDK\src\SpoutGLDXinterop.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutFrameCount.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutGL.cpp" />
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutGLextensions.cpp" />
-    <ClCompile Include="..\libs\SpoutSDK\src\SpoutMemoryShare.cpp" />
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutReceiver.cpp" />
-    <ClCompile Include="..\libs\SpoutSDK\src\SpoutSDK.cpp" />
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutSender.cpp" />
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutSenderNames.cpp" />
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutSharedMemory.cpp" />
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutUtils.cpp" />
     <ClCompile Include="..\src\ofxSpout\Receiver.cpp" />
     <ClCompile Include="..\src\ofxSpout\Sender.cpp" />
     <ClCompile Include="..\src\ofxSpout\Utils.cpp" />

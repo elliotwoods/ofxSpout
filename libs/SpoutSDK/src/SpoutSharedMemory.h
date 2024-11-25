@@ -1,13 +1,13 @@
 /*
 
-	spoutSharedMemory.h
+	SpoutSharedMemory.h
 	
 	Thanks and credit to Malcolm Bechard the author of this class
 
 	https://github.com/mbechard
 
 	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	Copyright (c) 2014-2019, Lynn Jarvis. All rights reserved.
+	Copyright (c) 2014-2024, Lynn Jarvis. All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without modification, 
 	are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@
 	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
+
 #pragma once
 
 #ifndef __SpoutSharedMemory_ // standard way as well
@@ -37,13 +38,14 @@
 
 #include "SpoutCommon.h"
 #include <windowsx.h>
-#include <d3d9.h>
 #include <wingdi.h>
 
 using namespace spoututils;
 
-enum SpoutCreateResult
-{
+//
+// Result of memory segment creation
+//
+enum SpoutCreateResult {
 	SPOUT_CREATE_FAILED = 0,
 	SPOUT_CREATE_SUCCESS,
 	SPOUT_ALREADY_EXISTS,
@@ -51,34 +53,44 @@ enum SpoutCreateResult
 };
 
 class SPOUT_DLLEXP SpoutSharedMemory {
+
 public:
+
 	SpoutSharedMemory();
 	~SpoutSharedMemory();
-
 
 	// Create a new memory segment, or attach to an existing one
 	SpoutCreateResult Create(const char* name, int size);
 
-	// Opens an existing map
+	// Open an existing memory map
 	bool Open(const char* name);
+
+	// Close a map
 	void Close();
 
-	// Returns the buffer
+	// Lock an open map and return the buffer
 	char* Lock();
+
+	// Unlock a map
 	void Unlock();
 
+	// Name of an existing map
+	const char* Name();
+	
+	// Size of an existing map
+	int Size();
+
+	// Print map information for debugging
 	void Debug();
 
 private:
 
-	char*  m_pBuffer;
-	HANDLE m_hMap;
-	HANDLE m_hMutex;
-
-	int m_lockCount;
-
-	const char*	m_pName;
-	int m_size;
+	char*  m_pBuffer; // Buffer pointer
+	HANDLE m_hMap; // Map handle
+	HANDLE m_hMutex; // Mutex for map access
+	int m_lockCount; // Map access lock count
+	char* m_pName; // Map name
+	int m_size; // Map size
 
 };
 

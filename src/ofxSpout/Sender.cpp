@@ -4,6 +4,9 @@
 
 #include "ofFbo.h"
 
+#include <gl/glew.h>
+#include "SpoutSender.h"
+
 namespace ofxSpout {
 	//----------
 	Sender::Sender() {
@@ -31,9 +34,9 @@ namespace ofxSpout {
 			this->glFormat = glFormat;
 
 			//create the sender, and allow for Spout to change our channel name
-			if (!this->spoutSender->SetupSender(channelName.c_str(), initialWidth, initialHeight, toDXFormat(this->glFormat))) {
-				throw("Can't create sender");
-			}
+			this->spoutSender->SetSenderName(channelName.c_str());
+			this->spoutSender->SetSenderFormat(ofxSpout::toDXFormat(glFormat));
+
 			return true;
 		}
 		catch (const char * e) {
@@ -71,16 +74,9 @@ namespace ofxSpout {
 		}
 
 		try {
-			//check if the sender matches the settings of the texture
-			if (this->spoutSender->GetWidth() != texture.getWidth() || this->spoutSender->GetHeight() != texture.getHeight()) {
-				//update the sender to match local settings
-				this->spoutSender->Update(texture.getWidth(), texture.getHeight());
-			}
-
-			//send texture and retain any fbo bound for drawing
-			GLint drawFboId = 0;
-			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-			this->spoutSender->SendTextureData(texture.getTextureData().textureID, texture.getTextureData().textureTarget, drawFboId);
+			this->spoutSender->SendTexture(texture.getTextureData().textureID
+				, texture.getTextureData().textureTarget
+				, texture.getWidth(), texture.getHeight());
 			return true;
 		}
 		catch (const char * e) {

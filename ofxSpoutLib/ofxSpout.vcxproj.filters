@@ -24,19 +24,34 @@
     <ClInclude Include="..\src\ofxSpout\Sender.h">
       <Filter>src\ofxSpout</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutGLDXinterop.h">
+    <ClInclude Include="..\src\ofxSpout\Receiver.h">
+      <Filter>src\ofxSpout</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ofxSpout\Utils.h">
+      <Filter>src\ofxSpout</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\SpoutSDK\src\Spout.h">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutCommon.h">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutCopy.h">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutDirectX.h">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutFrameCount.h">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutGL.h">
       <Filter>libs\SpoutSDK\src</Filter>
     </ClInclude>
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutGLextensions.h">
       <Filter>libs\SpoutSDK\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutMemoryShare.h">
-      <Filter>libs\SpoutSDK\src</Filter>
-    </ClInclude>
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutReceiver.h">
-      <Filter>libs\SpoutSDK\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutSDK.h">
       <Filter>libs\SpoutSDK\src</Filter>
     </ClInclude>
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutSender.h">
@@ -48,36 +63,39 @@
     <ClInclude Include="..\libs\SpoutSDK\src\SpoutSharedMemory.h">
       <Filter>libs\SpoutSDK\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\libs\SpoutSDK\src\Spout.h">
+    <ClInclude Include="..\libs\SpoutSDK\src\SpoutUtils.h">
       <Filter>libs\SpoutSDK\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutCommon.h">
-      <Filter>libs\SpoutSDK\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libs\SpoutSDK\src\SpoutDirectX.h">
-      <Filter>libs\SpoutSDK\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ofxSpout\Receiver.h">
-      <Filter>src\ofxSpout</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\ofxSpout\Utils.h">
-      <Filter>src\ofxSpout</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\ofxSpout\Sender.cpp">
       <Filter>src\ofxSpout</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\ofxSpout\Receiver.cpp">
+      <Filter>src\ofxSpout</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ofxSpout\Utils.cpp">
+      <Filter>src\ofxSpout</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\SpoutSDK\src\Spout.cpp">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutCopy.cpp">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutDirectX.cpp">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutFrameCount.cpp">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutGL.cpp">
+      <Filter>libs\SpoutSDK\src</Filter>
+    </ClCompile>
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutGLextensions.cpp">
       <Filter>libs\SpoutSDK\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\SpoutSDK\src\SpoutMemoryShare.cpp">
-      <Filter>libs\SpoutSDK\src</Filter>
-    </ClCompile>
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutReceiver.cpp">
-      <Filter>libs\SpoutSDK\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\SpoutSDK\src\SpoutSDK.cpp">
       <Filter>libs\SpoutSDK\src</Filter>
     </ClCompile>
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutSender.cpp">
@@ -89,17 +107,8 @@
     <ClCompile Include="..\libs\SpoutSDK\src\SpoutSharedMemory.cpp">
       <Filter>libs\SpoutSDK\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\libs\SpoutSDK\src\SpoutGLDXinterop.cpp">
+    <ClCompile Include="..\libs\SpoutSDK\src\SpoutUtils.cpp">
       <Filter>libs\SpoutSDK\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libs\SpoutSDK\src\SpoutDirectX.cpp">
-      <Filter>libs\SpoutSDK\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ofxSpout\Receiver.cpp">
-      <Filter>src\ofxSpout</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\ofxSpout\Utils.cpp">
-      <Filter>src\ofxSpout</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

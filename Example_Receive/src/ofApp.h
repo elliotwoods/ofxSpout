@@ -1,6 +1,6 @@
 #pragma once
-#include "ofMain.h"
 #include "ofxSpout.h"
+#include "ofMain.h"
 
 class ofApp : public ofBaseApp{
 

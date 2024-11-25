@@ -3,7 +3,8 @@
 #include "ofLog.h"
 #include "ofTexture.h"
 #include <string>
-#include "SpoutSender.h"
+
+class SpoutSender;
 
 namespace ofxSpout {
 	class Sender {
@@ -16,7 +17,7 @@ namespace ofxSpout {
 		void release();
 		bool isInitialized() const;
 
-		bool send(const ofTexture &);
+		bool send(const ofTexture&);
 
 		std::string getChannelName() const;
 		bool setVerticalSync(bool);
